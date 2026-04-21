@@ -205,3 +205,29 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# =========================
+# MCIS Custom Exclusions
+# =========================
+# Ignore all data files and folders
+data/
+*.csv
+*.tsv
+*.json
+*.xlsx
+*.npy
+
+# Ignore model checkpoints and weights
+models/
+weights/
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.ckpt
+
+# Ignore Weights & Biases local logs
+wandb/
+
+# Ignore environment variables (API keys)
+.env
