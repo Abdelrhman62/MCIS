@@ -1,0 +1,47 @@
+# =============================================================================
+# MCIS Benchmark — pre-commit hooks
+# =============================================================================
+# Runs automatically on `git commit`. Install once with:  pre-commit install
+# Run manually on all files with:                         pre-commit run --all-files
+
+repos:
+  # ----- General hygiene ---------------------------------------------------
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: check-added-large-files
+        args: ["--maxkb=2048"]   # block files larger than 2 MB (catches stray data)
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: detect-private-key
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+
+  # ----- Python formatting -------------------------------------------------
+  - repo: https://github.com/psf/black
+    rev: 24.4.2
+    hooks:
+      - id: black
+        language_version: python3
+
+  # ----- Python linting ----------------------------------------------------
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.4
+    hooks:
+      - id: ruff
+        args: ["--fix"]
+      - id: ruff-format       # fast formatter; runs after black, mostly a no-op
+
+# -----------------------------------------------------------------------------
+# Notes
+# -----------------------------------------------------------------------------
+# - check-added-large-files is set to 2 MB. Frozen data is gitignored, but this
+#   is a second line of defense against accidental commits of CSVs, parquets,
+#   or model checkpoints.
+# - If a hook fails on commit, fix the issue and `git add` the corrected files,
+#   then commit again. The hook will rerun.

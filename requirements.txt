@@ -1,0 +1,65 @@
+# =============================================================================
+# MCIS Benchmark — pinned dependencies
+# =============================================================================
+# Core ML stack — versions locked per Week 1 task spec for reproducibility.
+# DO NOT bump without a coordinated team decision and re-running B0.
+
+torch>=2.3.0
+transformers>=4.45.0
+tokenizers>=0.19.0
+scikit-multilearn==0.2.0
+scikit-learn==1.4.0
+wandb==0.17.0
+seqeval==1.2.2
+pandas==2.2.0
+numpy>=1.26.0
+
+# -----------------------------------------------------------------------------
+# Required-by-default but not listed in the original task spec
+# -----------------------------------------------------------------------------
+
+# HuggingFace Trainer — pulls accelerate transitively, but we pin it explicitly
+accelerate==0.30.1
+
+# YAML config loading (BenchmarkConfig <-- configs/*.yaml)
+pyyaml==6.0.1
+
+# Progress bars — used by HF Trainer and our own scripts
+tqdm==4.66.4
+
+# Parquet read/write — Baheya secondary parquet inputs for sanity loads
+pyarrow>=17.0.0
+
+# Hydra-style dataclass config validation (lightweight; optional but small)
+omegaconf==2.3.0
+
+# -----------------------------------------------------------------------------
+# Tokenizer dependencies
+# -----------------------------------------------------------------------------
+
+# SentencePiece — required by BioLinkBERT and several other Stage-D encoders
+sentencepiece>=0.2.0
+
+# protobuf — required by sentencepiece + transformers tokenizer loading
+protobuf==4.25.3
+
+# -----------------------------------------------------------------------------
+# Dev tooling — formatters and linters
+# -----------------------------------------------------------------------------
+
+black==24.4.2
+ruff==0.4.4
+pre-commit==3.7.1
+
+# Test harness
+pytest==8.2.0
+
+# -----------------------------------------------------------------------------
+# Notes
+# -----------------------------------------------------------------------------
+# - scikit-multilearn 0.2.0 is the latest release (last updated 2018) and is
+#   imported as `skmultilearn`. It works on Python 3.10/3.11; if Day 2's
+#   IterativeStratification fails on imports, check `from skmultilearn.model_selection
+#   import IterativeStratification` and fall back to manual implementation.
+# - GPU CUDA: torch==2.3.0 supports CUDA 11.8 and 12.1. Verify with
+#   `python -c "import torch; print(torch.cuda.is_available(), torch.version.cuda)"`.

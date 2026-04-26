@@ -1,0 +1,78 @@
+# =============================================================================
+# MCIS Benchmark — project configuration
+# =============================================================================
+# This file configures `black` (code formatter) and `ruff` (linter).
+# Both are invoked via pre-commit on every `git commit`.
+
+[tool.black]
+line-length = 100
+target-version = ["py310", "py311"]
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+    \.venv
+  | venv
+  | wandb
+  | data/frozen
+  | checkpoints
+)/
+'''
+
+# -----------------------------------------------------------------------------
+# Ruff — fast Python linter
+# -----------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+extend-exclude = [
+    ".venv",
+    "venv",
+    "wandb",
+    "data/frozen",
+    "checkpoints",
+    "__pycache__",
+]
+
+[tool.ruff.lint]
+# Rule families:
+#   E, W  -- pycodestyle (PEP 8 errors and warnings)
+#   F     -- pyflakes (unused imports, undefined names, etc.)
+#   I     -- isort (import sorting)
+#   B     -- flake8-bugbear (likely bugs / design issues)
+#   UP    -- pyupgrade (modernize syntax)
+#   N     -- pep8-naming
+#   SIM   -- flake8-simplify
+select = ["E", "W", "F", "I", "B", "UP", "N", "SIM"]
+
+# Pragmatic ignores:
+#   E501  -- line too long (black handles this; some long URLs/docstrings are fine)
+#   B008  -- do not perform function call in argument defaults (HF Trainer uses this)
+#   N812  -- lowercase imported as non-lowercase (e.g., `import torch.nn.functional as F`)
+ignore = ["E501", "B008", "N812"]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests can shadow names and use longer lines
+"tests/**/*.py" = ["F401", "F811", "E501"]
+# __init__.py files often re-export
+"**/__init__.py" = ["F401"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
+
+# -----------------------------------------------------------------------------
+# Pytest
+# -----------------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]

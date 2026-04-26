@@ -1,0 +1,3 @@
+# This file exists so the empty data/frozen/ directory can be committed to git.
+# Patient data files (baheya_*.csv) are gitignored and must NEVER be committed.
+# See scripts/generate_checksums.py for the integrity workflow.
