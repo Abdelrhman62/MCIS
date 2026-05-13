@@ -231,3 +231,4 @@ wandb/
 
 # Ignore environment variables (API keys)
 .env
+checkpoints/

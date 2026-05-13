@@ -1,0 +1,7 @@
+a84dee14cb0a6c5fe63d1c0544d80f1b82a2cca06c9f026e52d5cd5ee0ecdd0f  CHECKSUMS.txt  (500 bytes)
+5aec222d5b1becc03c69782efac7166bb4cb0d48d95bc8aa85145cde836f7db3  build_m1_model_ready.py  (36,200 bytes)
+208f030bf8442195dc4ee9371db5c08ee6a32a0476ceaadb13126e1861b59cd8  cv_folds.csv  (49,847 bytes)
+3a60237769f17aca522b564ca418f278fede9415308f5604e04b0105ca27e107  data_card.md  (7,726 bytes)
+1bf539f5e6b7ea2775add1dc806d40da926cfdda92a5e62423fa2a58c9491330  label_vocab.json  (6,113 bytes)
+86fd6426e7d4e2f3ae8c5ca3e286da31876c2879f4f3e4d754b9ba782a269938  m1_model_ready.parquet  (744,284 bytes)
+09c243d8f0bdafae9849dc2d1ad4244c9ff084b071fdc8c7366668e78903923a  split_verification_report.csv  (219 bytes)

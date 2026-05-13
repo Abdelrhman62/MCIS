@@ -1,0 +1,95 @@
+# MCIS B0 — generated from frozen m1_model_ready artifact
+# Source: m1_model_ready.parquet (3055 rows; 2759 trainable / 296 test)
+
+experiment_name: "B0"
+seed: 42
+
+data:
+  parquet: "data/frozen/m1_model_ready/m1_model_ready.parquet"
+  label_vocab: "data/frozen/m1_model_ready/label_vocab.json"
+  cv_folds: "data/frozen/m1_model_ready/cv_folds.csv"
+  module: "M1"
+  text_field: "text_section_tagged"   # E1-fmt swaps to text_concatenated
+  trainable_value: "trainable"
+  test_value: "test"
+
+# Cardinalities frozen from trainable split (label_vocab.json is authoritative)
+label_cardinalities:
+  icdo3_topography:     8
+  icdo3_morphology:     24
+  icdo3_behavior:       4
+  icdo3_grade:          3
+  icdo3_laterality:     3
+  icd11_stem:           27
+  icd11_ext_anatomy:    16
+  icd11_ext_histopath:  23
+  icd11_ext_laterality: 6
+  icd11_ext_grading:    5
+# icd11_ext_staging excluded (zero examples, architecture v6 §6.2)
+
+axis_types:
+  # icd11_ext_laterality + icd11_ext_grading are single-pick per WHO ECT
+  # axis rules + Baheya audit (0/3055 multi-code rows). Arch v6 §6.2.
+  single_pick: [icdo3_topography, icdo3_morphology, icdo3_behavior,
+                icdo3_grade, icdo3_laterality, icd11_stem,
+                icd11_ext_laterality, icd11_ext_grading]
+  multilabel:  [icd11_ext_anatomy, icd11_ext_histopath]
+
+aux_fields: [nuclear_grade, tubular_score, mitosis_score, lvi, dcis_in_specimen]
+
+model:
+  encoder_hf_id: "microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext"
+
+  # PLM-ICD segment pooling (architecture v6 §6.2, handoff §2.1).
+  # Per-segment BERT pass, then pooled. Each segment carries [CLS]+tokens+[SEP].
+  segment_size: 128       # tokens per segment
+  max_segments: 20        # hard cap: 20 × 128 = 2560-token ceiling per record
+  # Cap chosen from truncation audit (2026-05-11): TCGA p95 = 19 segments;
+  # K=20 covers ~95% of TCGA pretrain w/o middle-drop (K=12 covered 83%).
+  # Baheya M1 biopsy max = 4 segments → cap is inactive there. Forward-safe
+  # for future M2 progress notes. Re-audit M2 data when available before
+  # adjusting. See results/truncation_audit/decisions.md.
+  strict_length: false    # false = middle-drop overflow; true = raise
+
+  # Diagnostic-only soft cap. Used by truncation_audit.py / unk_token_scan.py
+  # for what-if analyses. NOT enforced by the encoder.
+  diagnostic_max_tokens: 512
+
+  attention_hidden_dim: 256
+  init_from_checkpoint: null
+  use_aux_histology_heads: false   # E3 toggle
+  aux_loss_weight: 0.3
+  icd11_two_stage: false           # E6 toggle
+
+train:
+  epochs: 10
+  micro_batch_size: 8
+  grad_accumulation_steps: 4   # effective batch = 32
+  learning_rate: 3.0e-5
+  warmup_ratio: 0.10
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+  loss: "bce"                  # bce | focal | apl
+  focal_gamma: 2.0
+  early_stopping_patience: 3
+  mixed_precision: "no"        # cloud sets fp16/bf16
+
+cv:
+  enabled: true
+  n_folds: 5
+  seed: 42
+
+eval:
+  rare_code_threshold: 10
+  report_rare_separately: true
+  subgroups: [batch, template_flag, is_cancer_primary, nos_topography_derived]
+  test_only_oov_excluded: true   # see label_vocab.json -> test_only_labels
+
+logging:
+  project: "MCIS_AI"
+  run_name: null
+  output_dir: "results"
+  checkpoint_dir: "checkpoints"
+  wandb_enabled: true
+  wandb_mode: "online"
+
