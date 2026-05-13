@@ -1,0 +1,6 @@
+fold,size,batch1_pct,idc_pct,unique_stems_present,common_stems_missing,common_stems_total
+0,550,56.36,72.91,20,0,16
+1,540,57.96,75.0,21,0,16
+2,548,57.12,73.18,20,0,16
+3,554,56.86,75.27,21,0,16
+4,567,56.61,75.13,21,0,16

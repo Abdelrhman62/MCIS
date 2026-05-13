@@ -1,0 +1,300 @@
+{
+  "run_at": "2026-05-12T00:25:00+00:00",
+  "ckpt_path": "/Users/abdo/Desktop/MCIS/checkpoints/B0/best.pt",
+  "ckpt_epoch": 8,
+  "ckpt_best_epoch": 8,
+  "ckpt_best_metric_trainer_view": 0.5304717778987577,
+  "fold": 0,
+  "device": "mps",
+  "integrity": {
+    "data_sha_ok": true,
+    "ckpt_data_sha": "86fd6426e7d4e2f3ae8c5ca3e286da31876c2879f4f3e4d754b9ba782a269938",
+    "current_data_sha": "86fd6426e7d4e2f3ae8c5ca3e286da31876c2879f4f3e4d754b9ba782a269938",
+    "ckpt_vocab_sha": "1bf539f5e6b7ea2775add1dc806d40da926cfdda92a5e62423fa2a58c9491330",
+    "current_vocab_sha": "1bf539f5e6b7ea2775add1dc806d40da926cfdda92a5e62423fa2a58c9491330",
+    "cfg_drift": [],
+    "missing_keys_count": 0,
+    "unexpected_keys_count": 0
+  },
+  "n_val": 550,
+  "single_pick_axes": [
+    "icdo3_topography",
+    "icdo3_morphology",
+    "icdo3_behavior",
+    "icdo3_grade",
+    "icdo3_laterality",
+    "icd11_stem",
+    "icd11_ext_laterality",
+    "icd11_ext_grading"
+  ],
+  "multi_label_axes": [
+    "icd11_ext_anatomy",
+    "icd11_ext_histopath"
+  ],
+  "single_pick_metrics": {
+    "icdo3_topography": {
+      "f1_macro": 0.6679140300408903,
+      "f1_macro_present": 0.6679140300408903,
+      "n_valid": 525,
+      "n_classes_present": 8,
+      "accuracy": 0.8
+    },
+    "icdo3_morphology": {
+      "f1_macro": 0.36323356189396633,
+      "f1_macro_present": 0.4588213413397469,
+      "n_valid": 525,
+      "n_classes_present": 19,
+      "accuracy": 0.9276190476190476
+    },
+    "icdo3_behavior": {
+      "f1_macro": 0.6119999845971382,
+      "f1_macro_present": 0.815999979462851,
+      "n_valid": 524,
+      "n_classes_present": 3,
+      "accuracy": 0.9847328244274809
+    },
+    "icdo3_grade": {
+      "f1_macro": 0.9883582984958087,
+      "f1_macro_present": 0.9883582984958087,
+      "n_valid": 467,
+      "n_classes_present": 3,
+      "accuracy": 0.9892933618843683
+    },
+    "icdo3_laterality": {
+      "f1_macro": 0.795018553347227,
+      "f1_macro_present": 0.795018553347227,
+      "n_valid": 549,
+      "n_classes_present": 3,
+      "accuracy": 0.9872495446265938
+    },
+    "icd11_stem": {
+      "f1_macro": 0.2588691172450031,
+      "f1_macro_present": 0.34947330828075424,
+      "n_valid": 535,
+      "n_classes_present": 20,
+      "accuracy": 0.9065420560747663
+    },
+    "icd11_ext_laterality": {
+      "f1_macro": 0.32416603640757075,
+      "f1_macro_present": 0.3889992436890849,
+      "n_valid": 534,
+      "n_classes_present": 5,
+      "accuracy": 0.9662921348314607
+    },
+    "icd11_ext_grading": {
+      "f1_macro": 0.7725740605770579,
+      "f1_macro_present": 0.7725740605770579,
+      "n_valid": 534,
+      "n_classes_present": 5,
+      "accuracy": 0.9719101123595506
+    }
+  },
+  "multi_label_at_05": {
+    "icd11_ext_anatomy": {
+      "f1_micro": 0.5096870342771982,
+      "f1_macro": 0.10300685740019087,
+      "n_records": 550,
+      "n_with_any_positive": 402
+    },
+    "icd11_ext_histopath": {
+      "f1_micro": 0.4166666666666667,
+      "f1_macro": 0.042999308179447616,
+      "n_records": 550,
+      "n_with_any_positive": 56
+    }
+  },
+  "multi_label_at_b1_threshold": {
+    "icd11_ext_anatomy": {
+      "f1_micro": 0.47446457990115326,
+      "f1_macro": 0.08972486413043479,
+      "n_records": 550,
+      "n_with_any_positive": 402,
+      "matched_threshold": 0.6
+    },
+    "icd11_ext_histopath": {
+      "f1_micro": 0.05194805194805195,
+      "f1_macro": 0.006956521739130435,
+      "n_records": 550,
+      "n_with_any_positive": 56,
+      "matched_threshold": 0.8
+    }
+  },
+  "multi_label_at_e1_best": {
+    "icd11_ext_anatomy": {
+      "f1_micro": 0.5613207547169811,
+      "f1_macro": 0.11648196636801933,
+      "n_records": 550,
+      "n_with_any_positive": 402,
+      "fold0_best_threshold": 0.3
+    },
+    "icd11_ext_histopath": {
+      "f1_micro": 0.5,
+      "f1_macro": 0.060217391304347834,
+      "n_records": 550,
+      "n_with_any_positive": 56,
+      "fold0_best_threshold": 0.2
+    }
+  },
+  "e1_best_thresholds": {
+    "icd11_ext_anatomy": 0.3,
+    "icd11_ext_histopath": 0.2
+  },
+  "e1_threshold_sweep": {
+    "icd11_ext_anatomy": {
+      "0.1": 0.48026868178001675,
+      "0.2": 0.5491803278688525,
+      "0.3": 0.5613207547169811,
+      "0.4": 0.5382585751978892,
+      "0.5": 0.5096870342771982,
+      "0.6": 0.47446457990115326,
+      "0.7": 0.429090909090909,
+      "0.8": 0.12413793103448276,
+      "0.9": 0.0
+    },
+    "icd11_ext_histopath": {
+      "0.1": 0.44171779141104295,
+      "0.2": 0.5,
+      "0.3": 0.48543689320388345,
+      "0.4": 0.43298969072164956,
+      "0.5": 0.4166666666666667,
+      "0.6": 0.38297872340425526,
+      "0.7": 0.29213483146067415,
+      "0.8": 0.05194805194805195,
+      "0.9": 0.0
+    }
+  },
+  "b1_thresholds": {
+    "icd11_ext_anatomy": 0.6,
+    "icd11_ext_histopath": 0.8
+  },
+  "early_stop_at_05": 0.5304717778987577,
+  "mean_macro_at_05": 0.5977667053255828,
+  "mean_micro_at_05": 0.46317685047193247,
+  "early_stop_at_fold0_best": 0.5642135413420367,
+  "mean_macro_at_fold0_best": 0.5977667053255828,
+  "mean_micro_at_fold0_best": 0.5306603773584906,
+  "b0_floor": 0.0702,
+  "b1_floor_mean": 0.6350668464408591,
+  "b1_per_axis_aggregated": {
+    "icdo3_topography": {
+      "f1_macro_mean": 0.6658846909354297,
+      "f1_macro_std": 0.010625427258096613,
+      "f1_macro_present_mean": 0.703777948178588,
+      "f1_macro_present_std": 0.04541506311728793,
+      "n_valid_mean": 527.4,
+      "n_valid_std": 8.452218643646175,
+      "n_classes_present_mean": 7.6,
+      "n_classes_present_std": 0.48989794855663565,
+      "accuracy_mean": 0.7598936800175065,
+      "accuracy_std": 0.01269039727731707
+    },
+    "icdo3_morphology": {
+      "f1_macro_mean": 0.40350012705319277,
+      "f1_macro_std": 0.02402656055675674,
+      "f1_macro_present_mean": 0.5278176759924733,
+      "f1_macro_present_std": 0.04691625949019172,
+      "n_valid_mean": 525.6,
+      "n_valid_std": 9.414881836751857,
+      "n_classes_present_mean": 18.4,
+      "n_classes_present_std": 0.8,
+      "accuracy_mean": 0.8659071322239658,
+      "accuracy_std": 0.012920250047790962
+    },
+    "icdo3_behavior": {
+      "f1_macro_mean": 0.5624824734159255,
+      "f1_macro_std": 0.034400797918942114,
+      "f1_macro_present_mean": 0.7141263531538027,
+      "f1_macro_present_std": 0.09802480554875535,
+      "n_valid_mean": 525.4,
+      "n_valid_std": 9.436100889668358,
+      "n_classes_present_mean": 3.2,
+      "n_classes_present_std": 0.39999999999999997,
+      "accuracy_mean": 0.9569358327070946,
+      "accuracy_std": 0.0078094931590575525
+    },
+    "icdo3_grade": {
+      "f1_macro_mean": 0.9481494026737269,
+      "f1_macro_std": 0.012286852910773364,
+      "f1_macro_present_mean": 0.9481494026737269,
+      "f1_macro_present_std": 0.012286852910773364,
+      "n_valid_mean": 468.0,
+      "n_valid_std": 11.027239001672177,
+      "n_classes_present_mean": 3.0,
+      "n_classes_present_std": 0.0,
+      "accuracy_mean": 0.9609225199920644,
+      "accuracy_std": 0.009040655243960865
+    },
+    "icdo3_laterality": {
+      "f1_macro_mean": 0.9065173051432278,
+      "f1_macro_std": 0.04844503481300801,
+      "f1_macro_present_mean": 0.9065173051432278,
+      "f1_macro_present_std": 0.04844503481300801,
+      "n_valid_mean": 551.6,
+      "n_valid_std": 8.912911982062877,
+      "n_classes_present_mean": 3.0,
+      "n_classes_present_std": 0.0,
+      "accuracy_mean": 0.9865129158531204,
+      "accuracy_std": 0.0061110615352040236
+    },
+    "icd11_stem": {
+      "f1_macro_mean": 0.2900789530649716,
+      "f1_macro_std": 0.014321897530019537,
+      "f1_macro_present_mean": 0.3801290780366907,
+      "f1_macro_present_std": 0.015117803405722456,
+      "n_valid_mean": 537.8,
+      "n_valid_std": 9.15204895091804,
+      "n_classes_present_mean": 20.6,
+      "n_classes_present_std": 0.4898979485566356,
+      "accuracy_mean": 0.8573415845911135,
+      "accuracy_std": 0.014121815503247955
+    },
+    "icd11_ext_laterality": {
+      "f1_macro_mean": 0.4250191012182135,
+      "f1_macro_std": 0.061658021428323224,
+      "f1_macro_present_mean": 0.5122160650695953,
+      "f1_macro_present_std": 0.06253338400499012,
+      "n_valid_mean": 537.4,
+      "n_valid_std": 9.93176721434811,
+      "n_classes_present_mean": 5.0,
+      "n_classes_present_std": 0.6324555320336759,
+      "accuracy_mean": 0.9436928352724075,
+      "accuracy_std": 0.009294705337113676
+    },
+    "icd11_ext_grading": {
+      "f1_macro_mean": 0.72222451114687,
+      "f1_macro_std": 0.004561700268279542,
+      "f1_macro_present_mean": 0.8305714353562452,
+      "f1_macro_present_std": 0.08874552164866699,
+      "n_valid_mean": 535.8,
+      "n_valid_std": 10.166612021711067,
+      "n_classes_present_mean": 4.4,
+      "n_classes_present_std": 0.48989794855663565,
+      "accuracy_mean": 0.9263897044589354,
+      "accuracy_std": 0.006681388579097407
+    },
+    "icd11_ext_anatomy": {
+      "f1_micro_mean": 0.6281987395155008,
+      "f1_micro_std": 0.02205718270235844,
+      "f1_macro_mean": 0.3539905292241396,
+      "f1_macro_std": 0.017592467461132646,
+      "n_records_mean": 551.8,
+      "n_records_std": 8.863407922464136,
+      "n_with_any_positive_mean": 400.6,
+      "n_with_any_positive_std": 11.288932633336067,
+      "locked_threshold_mean": 0.6,
+      "locked_threshold_std": 0.0
+    },
+    "icd11_ext_histopath": {
+      "f1_micro_mean": 0.681104505085046,
+      "f1_micro_std": 0.04572623713403624,
+      "f1_macro_mean": 0.30442317339680314,
+      "f1_macro_std": 0.06366983149202012,
+      "n_records_mean": 551.8,
+      "n_records_std": 8.863407922464136,
+      "n_with_any_positive_mean": 54.2,
+      "n_with_any_positive_std": 1.8330302779823358,
+      "locked_threshold_mean": 0.8,
+      "locked_threshold_std": 0.0
+    }
+  }
+}

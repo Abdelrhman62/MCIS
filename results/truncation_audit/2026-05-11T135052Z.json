@@ -1,0 +1,705 @@
+{
+  "run_at": "2026-05-11T13:50:52+00:00",
+  "config": {
+    "tokenizer": "microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext",
+    "segment_size": 128,
+    "max_segments": 12,
+    "length_thresholds": [
+      512,
+      1024,
+      1536
+    ],
+    "percentiles": [
+      50,
+      75,
+      90,
+      95,
+      99
+    ]
+  },
+  "datasets": {
+    "baheya_m1": {
+      "parquet": "/Users/abdo/Desktop/MCIS/data/frozen/m1_model_ready/m1_model_ready.parquet",
+      "n_rows_total": 3055,
+      "by_text_field": {
+        "text_section_tagged": {
+          "n_rows": 3055,
+          "token_length_stats": {
+            "mean": 118.37152209492635,
+            "min": 61,
+            "max": 385,
+            "p50": 112,
+            "p75": 124,
+            "p90": 144,
+            "p95": 173,
+            "p99": 224
+          },
+          "segment_count_stats": {
+            "mean": 1.2245499181669395,
+            "min": 1,
+            "max": 4,
+            "p50": 1,
+            "p75": 1,
+            "p90": 2,
+            "p95": 2,
+            "p99": 2
+          },
+          "truncation_rates_pct": {
+            "512": 0.0,
+            "1024": 0.0,
+            "1536": 0.0
+          },
+          "segment_count_dist": {
+            "1": 2381,
+            "2": 663,
+            "4": 1,
+            "3": 10
+          },
+          "overflow_at_max_segments": {
+            "max_segments": 12,
+            "n_overflow_records": 0,
+            "pct_overflow_records": 0.0,
+            "max_overflow_segments_dropped": 0
+          }
+        },
+        "text_concatenated": {
+          "n_rows": 3055,
+          "token_length_stats": {
+            "mean": 89.8582651391162,
+            "min": 37,
+            "max": 364,
+            "p50": 84,
+            "p75": 96,
+            "p90": 115,
+            "p95": 144,
+            "p99": 194
+          },
+          "segment_count_stats": {
+            "mean": 1.0723404255319149,
+            "min": 1,
+            "max": 3,
+            "p50": 1,
+            "p75": 1,
+            "p90": 1,
+            "p95": 2,
+            "p99": 2
+          },
+          "truncation_rates_pct": {
+            "512": 0.0,
+            "1024": 0.0,
+            "1536": 0.0
+          },
+          "segment_count_dist": {
+            "1": 2837,
+            "2": 215,
+            "3": 3
+          },
+          "overflow_at_max_segments": {
+            "max_segments": 12,
+            "n_overflow_records": 0,
+            "pct_overflow_records": 0.0,
+            "max_overflow_segments_dropped": 0
+          }
+        }
+      }
+    },
+    "tcga_pretrain": {
+      "parquet": "/Users/abdo/Desktop/MCIS/data/frozen/tcga_pretrain_model_ready/tcga_pretrain_model_ready.parquet",
+      "n_rows_total": 8453,
+      "by_text_field": {
+        "text_section_tagged": {
+          "n_rows": 8453,
+          "token_length_stats": {
+            "mean": 869.3784455222998,
+            "min": 30,
+            "max": 6061,
+            "p50": 674,
+            "p75": 1228,
+            "p90": 1873,
+            "p95": 2302,
+            "p99": 3289
+          },
+          "segment_count_stats": {
+            "mean": 7.4003312433455575,
+            "min": 1,
+            "max": 49,
+            "p50": 6,
+            "p75": 10,
+            "p90": 15,
+            "p95": 19,
+            "p99": 27
+          },
+          "truncation_rates_pct": {
+            "512": 60.558381639654556,
+            "1024": 31.657399739737375,
+            "1536": 16.526676919436888
+          },
+          "segment_count_dist": {
+            "8": 451,
+            "34": 4,
+            "3": 793,
+            "2": 1226,
+            "5": 706,
+            "6": 689,
+            "21": 46,
+            "4": 759,
+            "12": 271,
+            "14": 194,
+            "1": 503,
+            "18": 105,
+            "27": 22,
+            "10": 333,
+            "19": 62,
+            "15": 192,
+            "24": 35,
+            "11": 325,
+            "7": 599,
+            "13": 229,
+            "9": 360,
+            "16": 163,
+            "17": 124,
+            "23": 36,
+            "20": 66,
+            "29": 9,
+            "26": 25,
+            "22": 44,
+            "33": 6,
+            "28": 13,
+            "35": 4,
+            "25": 29,
+            "36": 2,
+            "32": 7,
+            "30": 9,
+            "31": 8,
+            "49": 1,
+            "39": 1,
+            "37": 2
+          },
+          "overflow_at_max_segments": {
+            "max_segments": 12,
+            "n_overflow_records": 1438,
+            "pct_overflow_records": 17.011711818289367,
+            "max_overflow_segments_dropped": 37,
+            "mean_info_loss_pct": 27.881609443197828,
+            "max_info_loss_pct": 75.51020408163265
+          },
+          "per_stratum": {
+            "ACC": {
+              "n_rows": 90,
+              "token_length_p95": 1707,
+              "segment_count_p95": 14,
+              "pct_over_1536_tokens": 8.88888888888889,
+              "pct_overflow_at_max_segments": 8.88888888888889
+            },
+            "BLCA": {
+              "n_rows": 379,
+              "token_length_p95": 3218,
+              "segment_count_p95": 26,
+              "pct_over_1536_tokens": 49.340369393139845,
+              "pct_overflow_at_max_segments": 50.131926121372025
+            },
+            "CESC": {
+              "n_rows": 288,
+              "token_length_p95": 2529,
+              "segment_count_p95": 20,
+              "pct_over_1536_tokens": 23.26388888888889,
+              "pct_overflow_at_max_segments": 23.61111111111111
+            },
+            "CHOL": {
+              "n_rows": 43,
+              "token_length_p95": 1496,
+              "segment_count_p95": 12,
+              "pct_over_1536_tokens": 4.651162790697675,
+              "pct_overflow_at_max_segments": 6.976744186046512
+            },
+            "COAD": {
+              "n_rows": 417,
+              "token_length_p95": 1220,
+              "segment_count_p95": 10,
+              "pct_over_1536_tokens": 2.158273381294964,
+              "pct_overflow_at_max_segments": 2.158273381294964
+            },
+            "DLBC": {
+              "n_rows": 47,
+              "token_length_p95": 1285,
+              "segment_count_p95": 11,
+              "pct_over_1536_tokens": 4.25531914893617,
+              "pct_overflow_at_max_segments": 4.25531914893617
+            },
+            "ESCA": {
+              "n_rows": 146,
+              "token_length_p95": 2044,
+              "segment_count_p95": 16,
+              "pct_over_1536_tokens": 6.164383561643835,
+              "pct_overflow_at_max_segments": 6.164383561643835
+            },
+            "GBM": {
+              "n_rows": 386,
+              "token_length_p95": 1744,
+              "segment_count_p95": 14,
+              "pct_over_1536_tokens": 6.994818652849741,
+              "pct_overflow_at_max_segments": 7.772020725388601
+            },
+            "HNSC": {
+              "n_rows": 520,
+              "token_length_p95": 3329,
+              "segment_count_p95": 27,
+              "pct_over_1536_tokens": 45.19230769230769,
+              "pct_overflow_at_max_segments": 45.57692307692307
+            },
+            "KICH": {
+              "n_rows": 112,
+              "token_length_p95": 1658,
+              "segment_count_p95": 14,
+              "pct_over_1536_tokens": 7.142857142857142,
+              "pct_overflow_at_max_segments": 8.035714285714286
+            },
+            "KIRC": {
+              "n_rows": 525,
+              "token_length_p95": 1259,
+              "segment_count_p95": 10,
+              "pct_over_1536_tokens": 2.666666666666667,
+              "pct_overflow_at_max_segments": 2.857142857142857
+            },
+            "KIRP": {
+              "n_rows": 279,
+              "token_length_p95": 1677,
+              "segment_count_p95": 14,
+              "pct_over_1536_tokens": 5.376344086021505,
+              "pct_overflow_at_max_segments": 5.376344086021505
+            },
+            "LGG": {
+              "n_rows": 465,
+              "token_length_p95": 1560,
+              "segment_count_p95": 13,
+              "pct_over_1536_tokens": 5.376344086021505,
+              "pct_overflow_at_max_segments": 6.666666666666667
+            },
+            "LIHC": {
+              "n_rows": 341,
+              "token_length_p95": 1454,
+              "segment_count_p95": 12,
+              "pct_over_1536_tokens": 3.812316715542522,
+              "pct_overflow_at_max_segments": 3.812316715542522
+            },
+            "LUAD": {
+              "n_rows": 487,
+              "token_length_p95": 2223,
+              "segment_count_p95": 18,
+              "pct_over_1536_tokens": 17.248459958932237,
+              "pct_overflow_at_max_segments": 17.864476386036962
+            },
+            "LUSC": {
+              "n_rows": 462,
+              "token_length_p95": 2002,
+              "segment_count_p95": 16,
+              "pct_over_1536_tokens": 15.151515151515152,
+              "pct_overflow_at_max_segments": 16.017316017316016
+            },
+            "MESO": {
+              "n_rows": 78,
+              "token_length_p95": 2267,
+              "segment_count_p95": 18,
+              "pct_over_1536_tokens": 23.076923076923077,
+              "pct_overflow_at_max_segments": 24.358974358974358
+            },
+            "OV": {
+              "n_rows": 366,
+              "token_length_p95": 3130,
+              "segment_count_p95": 25,
+              "pct_over_1536_tokens": 45.08196721311475,
+              "pct_overflow_at_max_segments": 45.08196721311475
+            },
+            "PAAD": {
+              "n_rows": 175,
+              "token_length_p95": 2232,
+              "segment_count_p95": 18,
+              "pct_over_1536_tokens": 25.71428571428571,
+              "pct_overflow_at_max_segments": 26.857142857142858
+            },
+            "PCPG": {
+              "n_rows": 174,
+              "token_length_p95": 1031,
+              "segment_count_p95": 9,
+              "pct_over_1536_tokens": 1.1494252873563218,
+              "pct_overflow_at_max_segments": 1.7241379310344827
+            },
+            "PRAD": {
+              "n_rows": 446,
+              "token_length_p95": 1734,
+              "segment_count_p95": 14,
+              "pct_over_1536_tokens": 10.31390134529148,
+              "pct_overflow_at_max_segments": 10.762331838565023
+            },
+            "READ": {
+              "n_rows": 161,
+              "token_length_p95": 1264,
+              "segment_count_p95": 11,
+              "pct_over_1536_tokens": 3.1055900621118013,
+              "pct_overflow_at_max_segments": 3.1055900621118013
+            },
+            "SARC": {
+              "n_rows": 249,
+              "token_length_p95": 1842,
+              "segment_count_p95": 15,
+              "pct_over_1536_tokens": 10.843373493975903,
+              "pct_overflow_at_max_segments": 11.244979919678714
+            },
+            "SKCM": {
+              "n_rows": 102,
+              "token_length_p95": 1204,
+              "segment_count_p95": 10,
+              "pct_over_1536_tokens": 1.9607843137254901,
+              "pct_overflow_at_max_segments": 1.9607843137254901
+            },
+            "STAD": {
+              "n_rows": 361,
+              "token_length_p95": 1374,
+              "segment_count_p95": 11,
+              "pct_over_1536_tokens": 3.8781163434903045,
+              "pct_overflow_at_max_segments": 3.8781163434903045
+            },
+            "TGCT": {
+              "n_rows": 87,
+              "token_length_p95": 873,
+              "segment_count_p95": 7,
+              "pct_over_1536_tokens": 0.0,
+              "pct_overflow_at_max_segments": 0.0
+            },
+            "THCA": {
+              "n_rows": 487,
+              "token_length_p95": 1760,
+              "segment_count_p95": 14,
+              "pct_over_1536_tokens": 9.034907597535934,
+              "pct_overflow_at_max_segments": 9.034907597535934
+            },
+            "THYM": {
+              "n_rows": 114,
+              "token_length_p95": 1269,
+              "segment_count_p95": 10,
+              "pct_over_1536_tokens": 1.7543859649122806,
+              "pct_overflow_at_max_segments": 1.7543859649122806
+            },
+            "UCEC": {
+              "n_rows": 545,
+              "token_length_p95": 2725,
+              "segment_count_p95": 22,
+              "pct_over_1536_tokens": 43.30275229357798,
+              "pct_overflow_at_max_segments": 44.77064220183487
+            },
+            "UCS": {
+              "n_rows": 56,
+              "token_length_p95": 2117,
+              "segment_count_p95": 17,
+              "pct_over_1536_tokens": 28.57142857142857,
+              "pct_overflow_at_max_segments": 30.357142857142854
+            },
+            "UVM": {
+              "n_rows": 65,
+              "token_length_p95": 917,
+              "segment_count_p95": 8,
+              "pct_over_1536_tokens": 0.0,
+              "pct_overflow_at_max_segments": 0.0
+            }
+          }
+        },
+        "text_concatenated": {
+          "n_rows": 8453,
+          "token_length_stats": {
+            "mean": 854.3784455222998,
+            "min": 15,
+            "max": 6046,
+            "p50": 659,
+            "p75": 1213,
+            "p90": 1858,
+            "p95": 2287,
+            "p99": 3274
+          },
+          "segment_count_stats": {
+            "mean": 7.276469892345912,
+            "min": 1,
+            "max": 48,
+            "p50": 6,
+            "p75": 10,
+            "p90": 15,
+            "p95": 19,
+            "p99": 26
+          },
+          "truncation_rates_pct": {
+            "512": 59.446350408139125,
+            "1024": 31.125044362948067,
+            "1536": 16.29007452975275
+          },
+          "segment_count_dist": {
+            "7": 594,
+            "33": 7,
+            "3": 745,
+            "2": 1158,
+            "5": 693,
+            "8": 434,
+            "6": 684,
+            "21": 46,
+            "12": 276,
+            "14": 201,
+            "1": 700,
+            "18": 95,
+            "27": 21,
+            "10": 327,
+            "19": 67,
+            "15": 190,
+            "24": 34,
+            "13": 219,
+            "11": 309,
+            "9": 356,
+            "4": 768,
+            "16": 147,
+            "17": 131,
+            "23": 36,
+            "20": 62,
+            "29": 10,
+            "26": 27,
+            "28": 13,
+            "22": 41,
+            "35": 2,
+            "25": 28,
+            "36": 3,
+            "32": 7,
+            "30": 8,
+            "31": 6,
+            "34": 5,
+            "48": 1,
+            "39": 1,
+            "37": 1
+          },
+          "overflow_at_max_segments": {
+            "max_segments": 12,
+            "n_overflow_records": 1409,
+            "pct_overflow_records": 16.668638353247367,
+            "max_overflow_segments_dropped": 36,
+            "mean_info_loss_pct": 27.86295711722088,
+            "max_info_loss_pct": 75.0
+          },
+          "per_stratum": {
+            "ACC": {
+              "n_rows": 90,
+              "token_length_p95": 1692,
+              "segment_count_p95": 14,
+              "pct_over_1536_tokens": 7.777777777777778,
+              "pct_overflow_at_max_segments": 8.88888888888889
+            },
+            "BLCA": {
+              "n_rows": 379,
+              "token_length_p95": 3203,
+              "segment_count_p95": 26,
+              "pct_over_1536_tokens": 49.340369393139845,
+              "pct_overflow_at_max_segments": 49.6042216358839
+            },
+            "CESC": {
+              "n_rows": 288,
+              "token_length_p95": 2514,
+              "segment_count_p95": 20,
+              "pct_over_1536_tokens": 23.26388888888889,
+              "pct_overflow_at_max_segments": 23.26388888888889
+            },
+            "CHOL": {
+              "n_rows": 43,
+              "token_length_p95": 1481,
+              "segment_count_p95": 11,
+              "pct_over_1536_tokens": 4.651162790697675,
+              "pct_overflow_at_max_segments": 4.651162790697675
+            },
+            "COAD": {
+              "n_rows": 417,
+              "token_length_p95": 1205,
+              "segment_count_p95": 10,
+              "pct_over_1536_tokens": 2.158273381294964,
+              "pct_overflow_at_max_segments": 2.158273381294964
+            },
+            "DLBC": {
+              "n_rows": 47,
+              "token_length_p95": 1270,
+              "segment_count_p95": 10,
+              "pct_over_1536_tokens": 4.25531914893617,
+              "pct_overflow_at_max_segments": 4.25531914893617
+            },
+            "ESCA": {
+              "n_rows": 146,
+              "token_length_p95": 2029,
+              "segment_count_p95": 16,
+              "pct_over_1536_tokens": 6.164383561643835,
+              "pct_overflow_at_max_segments": 6.164383561643835
+            },
+            "GBM": {
+              "n_rows": 386,
+              "token_length_p95": 1729,
+              "segment_count_p95": 14,
+              "pct_over_1536_tokens": 6.994818652849741,
+              "pct_overflow_at_max_segments": 7.512953367875648
+            },
+            "HNSC": {
+              "n_rows": 520,
+              "token_length_p95": 3314,
+              "segment_count_p95": 27,
+              "pct_over_1536_tokens": 44.230769230769226,
+              "pct_overflow_at_max_segments": 45.57692307692307
+            },
+            "KICH": {
+              "n_rows": 112,
+              "token_length_p95": 1643,
+              "segment_count_p95": 14,
+              "pct_over_1536_tokens": 6.25,
+              "pct_overflow_at_max_segments": 7.142857142857142
+            },
+            "KIRC": {
+              "n_rows": 525,
+              "token_length_p95": 1244,
+              "segment_count_p95": 10,
+              "pct_over_1536_tokens": 2.666666666666667,
+              "pct_overflow_at_max_segments": 2.666666666666667
+            },
+            "KIRP": {
+              "n_rows": 279,
+              "token_length_p95": 1662,
+              "segment_count_p95": 14,
+              "pct_over_1536_tokens": 5.376344086021505,
+              "pct_overflow_at_max_segments": 5.376344086021505
+            },
+            "LGG": {
+              "n_rows": 465,
+              "token_length_p95": 1545,
+              "segment_count_p95": 13,
+              "pct_over_1536_tokens": 5.376344086021505,
+              "pct_overflow_at_max_segments": 5.376344086021505
+            },
+            "LIHC": {
+              "n_rows": 341,
+              "token_length_p95": 1439,
+              "segment_count_p95": 12,
+              "pct_over_1536_tokens": 3.812316715542522,
+              "pct_overflow_at_max_segments": 3.812316715542522
+            },
+            "LUAD": {
+              "n_rows": 487,
+              "token_length_p95": 2208,
+              "segment_count_p95": 18,
+              "pct_over_1536_tokens": 17.248459958932237,
+              "pct_overflow_at_max_segments": 17.248459958932237
+            },
+            "LUSC": {
+              "n_rows": 462,
+              "token_length_p95": 1987,
+              "segment_count_p95": 16,
+              "pct_over_1536_tokens": 14.71861471861472,
+              "pct_overflow_at_max_segments": 15.367965367965366
+            },
+            "MESO": {
+              "n_rows": 78,
+              "token_length_p95": 2252,
+              "segment_count_p95": 18,
+              "pct_over_1536_tokens": 21.794871794871796,
+              "pct_overflow_at_max_segments": 23.076923076923077
+            },
+            "OV": {
+              "n_rows": 366,
+              "token_length_p95": 3115,
+              "segment_count_p95": 25,
+              "pct_over_1536_tokens": 44.53551912568306,
+              "pct_overflow_at_max_segments": 45.08196721311475
+            },
+            "PAAD": {
+              "n_rows": 175,
+              "token_length_p95": 2217,
+              "segment_count_p95": 18,
+              "pct_over_1536_tokens": 25.71428571428571,
+              "pct_overflow_at_max_segments": 26.857142857142858
+            },
+            "PCPG": {
+              "n_rows": 174,
+              "token_length_p95": 1016,
+              "segment_count_p95": 8,
+              "pct_over_1536_tokens": 1.1494252873563218,
+              "pct_overflow_at_max_segments": 1.1494252873563218
+            },
+            "PRAD": {
+              "n_rows": 446,
+              "token_length_p95": 1719,
+              "segment_count_p95": 14,
+              "pct_over_1536_tokens": 10.31390134529148,
+              "pct_overflow_at_max_segments": 10.538116591928251
+            },
+            "READ": {
+              "n_rows": 161,
+              "token_length_p95": 1249,
+              "segment_count_p95": 10,
+              "pct_over_1536_tokens": 3.1055900621118013,
+              "pct_overflow_at_max_segments": 3.1055900621118013
+            },
+            "SARC": {
+              "n_rows": 249,
+              "token_length_p95": 1827,
+              "segment_count_p95": 15,
+              "pct_over_1536_tokens": 10.040160642570282,
+              "pct_overflow_at_max_segments": 10.843373493975903
+            },
+            "SKCM": {
+              "n_rows": 102,
+              "token_length_p95": 1189,
+              "segment_count_p95": 9,
+              "pct_over_1536_tokens": 0.9803921568627451,
+              "pct_overflow_at_max_segments": 1.9607843137254901
+            },
+            "STAD": {
+              "n_rows": 361,
+              "token_length_p95": 1359,
+              "segment_count_p95": 11,
+              "pct_over_1536_tokens": 3.8781163434903045,
+              "pct_overflow_at_max_segments": 3.8781163434903045
+            },
+            "TGCT": {
+              "n_rows": 87,
+              "token_length_p95": 858,
+              "segment_count_p95": 7,
+              "pct_over_1536_tokens": 0.0,
+              "pct_overflow_at_max_segments": 0.0
+            },
+            "THCA": {
+              "n_rows": 487,
+              "token_length_p95": 1745,
+              "segment_count_p95": 14,
+              "pct_over_1536_tokens": 8.213552361396303,
+              "pct_overflow_at_max_segments": 9.034907597535934
+            },
+            "THYM": {
+              "n_rows": 114,
+              "token_length_p95": 1254,
+              "segment_count_p95": 10,
+              "pct_over_1536_tokens": 1.7543859649122806,
+              "pct_overflow_at_max_segments": 1.7543859649122806
+            },
+            "UCEC": {
+              "n_rows": 545,
+              "token_length_p95": 2710,
+              "segment_count_p95": 22,
+              "pct_over_1536_tokens": 43.11926605504588,
+              "pct_overflow_at_max_segments": 43.669724770642205
+            },
+            "UCS": {
+              "n_rows": 56,
+              "token_length_p95": 2102,
+              "segment_count_p95": 17,
+              "pct_over_1536_tokens": 28.57142857142857,
+              "pct_overflow_at_max_segments": 30.357142857142854
+            },
+            "UVM": {
+              "n_rows": 65,
+              "token_length_p95": 902,
+              "segment_count_p95": 8,
+              "pct_over_1536_tokens": 0.0,
+              "pct_overflow_at_max_segments": 0.0
+            }
+          }
+        }
+      }
+    }
+  }
+}

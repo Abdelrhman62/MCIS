@@ -1,0 +1,87 @@
+{
+  "icdo3_topography": {
+    "baheya_K": 8,
+    "brca_codes": [
+      "C50.2",
+      "C50.3",
+      "C50.4",
+      "C50.5",
+      "C50.8",
+      "C50.9"
+    ],
+    "in_baheya_vocab": [
+      "C50.2",
+      "C50.3",
+      "C50.4",
+      "C50.5",
+      "C50.9"
+    ],
+    "oov_under_baheya": [
+      "C50.8"
+    ],
+    "rows_total": 1025,
+    "rows_in_vocab": 1023
+  },
+  "icdo3_morphology": {
+    "baheya_K": 24,
+    "brca_unique_K": 21,
+    "in_baheya_vocab": [
+      "8010",
+      "8050",
+      "8200",
+      "8211",
+      "8480",
+      "8500",
+      "8502",
+      "8503",
+      "8507",
+      "8510",
+      "8520",
+      "8522",
+      "8575",
+      "9020"
+    ],
+    "oov_under_baheya": [
+      "8013",
+      "8022",
+      "8090",
+      "8401",
+      "8523",
+      "8524",
+      "8541"
+    ],
+    "rows_total": 1025,
+    "rows_in_vocab": 992
+  },
+  "icdo3_laterality": {
+    "baheya_K": 3,
+    "brca_unique": [
+      "L",
+      "R"
+    ],
+    "in_baheya_vocab": [
+      "L",
+      "R"
+    ],
+    "oov_under_baheya": [],
+    "rows_total": 961,
+    "rows_in_vocab": 961
+  },
+  "icdo3_behavior": {
+    "baheya_K": 4,
+    "brca_unique": [
+      "3"
+    ],
+    "in_baheya_vocab": [
+      "3"
+    ],
+    "oov_under_baheya": [],
+    "rows_total": 1025,
+    "rows_in_vocab": 1025
+  },
+  "icdo3_grade": {
+    "baheya_K": 3,
+    "brca_grade_coverage_pct": 0.0,
+    "note": "BRCA has 0% grade populated; coverage analysis moot"
+  }
+}

@@ -1,0 +1,346 @@
+{
+  "version": 3,
+  "module": "M1",
+  "dataset": "baheya_m1",
+  "built_from_split": "trainable",
+  "built_at": "2026-05-11T13:31:24.367956+00:00",
+  "seed": 42,
+  "ordering": "frequency-descending",
+  "axes": {
+    "icdo3_topography": [
+      "C50.4",
+      "C50.9",
+      "C50.2",
+      "C50.1",
+      "C50.5",
+      "C50.3",
+      "C50.6",
+      "C50.0"
+    ],
+    "icdo3_morphology": [
+      "8500",
+      "8520",
+      "8510",
+      "8470",
+      "8507",
+      "8522",
+      "8201",
+      "8010",
+      "8503",
+      "8140",
+      "8504",
+      "8480",
+      "8453",
+      "8540",
+      "8575",
+      "8509",
+      "8501",
+      "8050",
+      "8211",
+      "9020",
+      "8032",
+      "8200",
+      "8502",
+      "8550"
+    ],
+    "icdo3_behavior": [
+      "3",
+      "2",
+      "6",
+      "0"
+    ],
+    "icdo3_grade": [
+      "2",
+      "3",
+      "1"
+    ],
+    "icdo3_laterality": [
+      "L",
+      "R",
+      "B"
+    ],
+    "icd11_stem": [
+      "2C61.0",
+      "2C61.1",
+      "2E65.2",
+      "2C6Y",
+      "2C60.0",
+      "2C61",
+      "GB20.1",
+      "2E65.4",
+      "2F30.5",
+      "2C61.4",
+      "2C60",
+      "2F75",
+      "2C61.3",
+      "2E65.5",
+      "GB20.0",
+      "GB23.2",
+      "2C6Z",
+      "2E65.3",
+      "2F30.2",
+      "2F30.Y",
+      "2C63",
+      "2E65.Y",
+      "GB20",
+      "GB23.0",
+      "2018",
+      "GB20.2",
+      "MA01"
+    ],
+    "icd11_ext_laterality": [
+      "XK8G",
+      "XK9K",
+      "XK9G",
+      "XK9J",
+      "XK8K",
+      "XS9K"
+    ],
+    "icd11_ext_grading": [
+      "XS58",
+      "XS7Z",
+      "XS56",
+      "XS7H",
+      "XS7M"
+    ],
+    "icd11_ext_anatomy": [
+      "XA9CM2",
+      "XA2Q54",
+      "XA3JH9",
+      "XA3LS6",
+      "XA0US1",
+      "XA2JK3",
+      "XA94U2",
+      "XA0VX8",
+      "XA3PG5",
+      "XJ3VM",
+      "XA90B2",
+      "XA5MC5",
+      "XA0UK0",
+      "XA33X2",
+      "XA5DY0",
+      "XA1NS5"
+    ],
+    "icd11_ext_histopath": [
+      "XH1YZ3",
+      "XH4TA4",
+      "XH1390",
+      "XH9C56",
+      "XH0GT6",
+      "XH2YP5",
+      "XH8UE4",
+      "XH1S75",
+      "XH0RD4",
+      "XH8KR8",
+      "XH5WU3",
+      "XH1XB5",
+      "XH3E21",
+      "XH7M",
+      "XH3RK9",
+      "XH90W1",
+      "XH9VG0",
+      "XH11S9",
+      "XH3RZ4",
+      "XH4302",
+      "XH60S7",
+      "XH6PY4",
+      "XH9FX2"
+    ]
+  },
+  "axis_meta": {
+    "icdo3_topography": {
+      "type": "single_pick",
+      "null_policy": "mask_in_loss"
+    },
+    "icdo3_morphology": {
+      "type": "single_pick",
+      "null_policy": "mask_in_loss"
+    },
+    "icdo3_behavior": {
+      "type": "single_pick",
+      "null_policy": "mask_in_loss"
+    },
+    "icdo3_grade": {
+      "type": "single_pick",
+      "null_policy": "mask_in_loss"
+    },
+    "icdo3_laterality": {
+      "type": "single_pick",
+      "null_policy": "mask_in_loss"
+    },
+    "icd11_stem": {
+      "type": "single_pick",
+      "null_policy": "mask_in_loss"
+    },
+    "icd11_ext_laterality": {
+      "type": "single_pick",
+      "null_policy": "mask_in_loss"
+    },
+    "icd11_ext_grading": {
+      "type": "single_pick",
+      "null_policy": "mask_in_loss"
+    },
+    "icd11_ext_anatomy": {
+      "type": "multi_label",
+      "delimiter": "|",
+      "null_policy": "empty_list_means_none"
+    },
+    "icd11_ext_histopath": {
+      "type": "multi_label",
+      "delimiter": "|",
+      "null_policy": "empty_list_means_none"
+    }
+  },
+  "axes_counts": {
+    "icdo3_topography": {
+      "C50.4": 1123,
+      "C50.9": 681,
+      "C50.2": 278,
+      "C50.1": 188,
+      "C50.5": 175,
+      "C50.3": 135,
+      "C50.6": 49,
+      "C50.0": 8
+    },
+    "icdo3_morphology": {
+      "8500": 2050,
+      "8520": 285,
+      "8510": 88,
+      "8470": 38,
+      "8507": 26,
+      "8522": 24,
+      "8201": 21,
+      "8010": 18,
+      "8503": 14,
+      "8140": 11,
+      "8504": 11,
+      "8480": 9,
+      "8453": 6,
+      "8540": 5,
+      "8575": 5,
+      "8509": 4,
+      "8501": 3,
+      "8050": 2,
+      "8211": 2,
+      "9020": 2,
+      "8032": 1,
+      "8200": 1,
+      "8502": 1,
+      "8550": 1
+    },
+    "icdo3_behavior": {
+      "3": 2420,
+      "2": 176,
+      "6": 30,
+      "0": 1
+    },
+    "icdo3_grade": {
+      "2": 1578,
+      "3": 419,
+      "1": 343
+    },
+    "icdo3_laterality": {
+      "L": 1396,
+      "R": 1330,
+      "B": 32
+    },
+    "icd11_stem": {
+      "2C61.0": 1873,
+      "2C61.1": 281,
+      "2E65.2": 168,
+      "2C6Y": 112,
+      "2C60.0": 87,
+      "2C61": 51,
+      "GB20.1": 19,
+      "2E65.4": 18,
+      "2F30.5": 11,
+      "2C61.4": 9,
+      "2C60": 8,
+      "2F75": 8,
+      "2C61.3": 6,
+      "2E65.5": 5,
+      "GB20.0": 5,
+      "GB23.2": 5,
+      "2C6Z": 3,
+      "2E65.3": 3,
+      "2F30.2": 3,
+      "2F30.Y": 3,
+      "2C63": 2,
+      "2E65.Y": 2,
+      "GB20": 2,
+      "GB23.0": 2,
+      "2018": 1,
+      "GB20.2": 1,
+      "MA01": 1
+    },
+    "icd11_ext_laterality": {
+      "XK8G": 1360,
+      "XK9K": 1289,
+      "XK9G": 16,
+      "XK9J": 11,
+      "XK8K": 10,
+      "XS9K": 1
+    },
+    "icd11_ext_grading": {
+      "XS58": 1636,
+      "XS7Z": 433,
+      "XS56": 342,
+      "XS7H": 266,
+      "XS7M": 2
+    },
+    "icd11_ext_anatomy": {
+      "XA9CM2": 808,
+      "XA2Q54": 454,
+      "XA3JH9": 262,
+      "XA3LS6": 108,
+      "XA0US1": 106,
+      "XA2JK3": 90,
+      "XA94U2": 60,
+      "XA0VX8": 48,
+      "XA3PG5": 30,
+      "XJ3VM": 21,
+      "XA90B2": 17,
+      "XA5MC5": 7,
+      "XA0UK0": 4,
+      "XA33X2": 4,
+      "XA5DY0": 2,
+      "XA1NS5": 1
+    },
+    "icd11_ext_histopath": {
+      "XH1YZ3": 116,
+      "XH4TA4": 86,
+      "XH1390": 39,
+      "XH9C56": 25,
+      "XH0GT6": 15,
+      "XH2YP5": 13,
+      "XH8UE4": 13,
+      "XH1S75": 9,
+      "XH0RD4": 7,
+      "XH8KR8": 7,
+      "XH5WU3": 6,
+      "XH1XB5": 5,
+      "XH3E21": 5,
+      "XH7M": 3,
+      "XH3RK9": 2,
+      "XH90W1": 2,
+      "XH9VG0": 2,
+      "XH11S9": 1,
+      "XH3RZ4": 1,
+      "XH4302": 1,
+      "XH60S7": 1,
+      "XH6PY4": 1,
+      "XH9FX2": 1
+    }
+  },
+  "test_only_labels": {
+    "icd11_ext_histopath": {
+      "codes": [
+        "XH4JA4",
+        "XH5ZH7",
+        "XH9Z29"
+      ],
+      "test_rows_affected": 3
+    }
+  },
+  "icd11_policy": "gold_in_baheya"
+}
