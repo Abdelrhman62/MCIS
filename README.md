@@ -118,7 +118,8 @@ Every run logs the data SHA256 checksums to W&B. Drift in the frozen data will s
 |---|---|
 | Benchmark lead, ML dev | Abdelrhman Akram |
 | ML dev, evaluation infrastructure | Malak Khalifa |
-| M3 / M4 / frontend / validation | Khalid Ahmed, Yousif Metwally, Mohammed Nehad |
+| Frontend / Backend | Khalid Ahmed, Yousif Metwally |
+| M3 / M4 | Mohammed Nehad |
 | Supervisor | Dr. Mohamed Mysara |
 | Supervisor | Dr. Sahar Selim |
 | Co-supervisor | Eng. Dina Yahia |
