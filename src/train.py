@@ -19,9 +19,10 @@ Phase awareness:
     auto-restricts active axes to ICD-O-3 only (TCGA ICD-11 = silver,
     never label per architecture v6 §6.4).
   - Phase 2 (Baheya fine-tune): cfg.data.module = 'M1'. All 10 axes active.
-  - To init Phase 2 from Phase 1: pass init_from_checkpoint in cfg.model.
-    Trainer loads encoder+attention+ICD-O-3 head weights, leaves ICD-11 heads
-    at random init (they were inactive during Phase 1).
+  - To init Phase 2 from Phase 1: set cfg.model.init_from_checkpoint and
+    optionally tune cfg.model.{init_load_attention, init_load_heads}.
+    Defaults (load encoder + attention, reset heads) match architecture v6
+    §4.4: encoder-only transfer, fresh heads sized for Baheya vocab.
 
 Memory model:
   - Dataset is in-memory (BaheyaM1Dataset materializes the whole table).
@@ -55,6 +56,7 @@ from src.data.loaders import (
     collate_m1,
     load_parquet,
     split_by_fold,
+    split_by_value,
     split_trainable_test,
 )
 from src.eval.metrics import (
@@ -63,8 +65,10 @@ from src.eval.metrics import (
     f1_macro_singlepick,
     f1_multilabel,
 )
+from src.losses import attach_loss_fns_to_heads, build_loss_fns
 from src.models.heads import NULL_TARGET_SENTINEL
 from src.models.oce import OCEOutput, OncologyCodingEngine
+from src.utils.checkpoint_loader import load_checkpoint_partial
 from src.utils.config import BenchmarkConfig
 from src.utils.logging import WandbRun, setup_console_logger
 from src.utils.seed import set_seed
@@ -213,20 +217,36 @@ class Trainer:
         log.info("Loading parquet from %s", cfg.data.parquet)
         df = load_parquet(cfg.data.parquet)
 
-        # 2. Split: trainable / test, then fold-wise train / val.
-        trainable_df, test_df = split_trainable_test(
-            df, cfg.data.trainable_value, cfg.data.test_value
-        )
-        log.info("Splits: trainable=%d, test=%d", len(trainable_df), len(test_df))
-
+        # 2. Split. Two regimes:
+        #   - cv.enabled (Baheya M1): trainable/test 2-way, then fold-wise.
+        #   - no CV + data.val_value set (Phase 1 TCGA): pre-baked 3-way
+        #     (pretrain_train / pretrain_val / pretrain_test). pretrain_test
+        #     is held out, not loaded here.
+        #   - no CV + no val_value (legacy): 90/10 slice off trainable.
         if cfg.cv.enabled:
+            trainable_df, test_df = split_trainable_test(
+                df, cfg.data.trainable_value, cfg.data.test_value
+            )
+            log.info("Splits: trainable=%d, test=%d", len(trainable_df), len(test_df))
             try:
                 folds_df = pd.read_csv(cfg.data.cv_folds)
             except FileNotFoundError:
                 folds_df = None
             train_df, val_df = split_by_fold(trainable_df, folds_df, fold_idx)
+        elif cfg.data.val_value is not None:
+            # Phase 1 TCGA: explicit pre-baked train/val splits.
+            train_df = split_by_value(df, cfg.data.trainable_value)
+            val_df = split_by_value(df, cfg.data.val_value)
+            log.info(
+                "Pre-baked split: train(%s)=%d, val(%s)=%d (test split held out)",
+                cfg.data.trainable_value, len(train_df),
+                cfg.data.val_value, len(val_df),
+            )
         else:
-            # No CV → 90/10 holdout.
+            trainable_df, test_df = split_trainable_test(
+                df, cfg.data.trainable_value, cfg.data.test_value
+            )
+            log.info("Splits: trainable=%d, test=%d", len(trainable_df), len(test_df))
             n = len(trainable_df)
             n_val = max(1, int(0.1 * n))
             val_df = trainable_df.iloc[:n_val].reset_index(drop=True)
@@ -258,13 +278,35 @@ class Trainer:
         model_cfg = cls._build_model_cfg(cfg, vocab)
         model = OncologyCodingEngine.from_config(model_cfg)
 
-        # Optional: init from a Phase-1 checkpoint.
+        # Optional: init from a pretrain/E2 checkpoint.
+        # Defaults (cfg.model.init_load_{attention,heads}): load encoder + attn,
+        # reset heads. This is Phase1→Phase2 transfer per arch v6 §4.4.
+        # For E5a/E5b/E6 stacking on same-vocab base, override in the YAML:
+        #   model:
+        #     init_from_checkpoint: checkpoints/E2/fold_0/best.pt
+        #     init_load_heads: true
         if cfg.model.init_from_checkpoint:
-            log.info("Initializing from checkpoint: %s", cfg.model.init_from_checkpoint)
-            ckpt = torch.load(cfg.model.init_from_checkpoint, map_location="cpu")
-            # Phase 1 → Phase 2: load shared weights only; ICD-11 heads stay random.
-            missing, unexpected = model.load_state_dict(ckpt["model_state_dict"], strict=False)
-            log.info("  missing keys: %d  unexpected keys: %d", len(missing), len(unexpected))
+            report = load_checkpoint_partial(
+                model=model,
+                ckpt_path=cfg.model.init_from_checkpoint,
+                load_encoder=True,
+                load_attention=cfg.model.init_load_attention,
+                load_heads=cfg.model.init_load_heads,
+                map_location="cpu",
+                log=log,
+            )
+            log.info(
+                "  init_from_checkpoint: loaded=%d skipped=%d shape_mismatched=%d",
+                len(report.loaded_keys),
+                len(report.skipped_by_filter),
+                len(report.shape_mismatched),
+            )
+
+        # Optional: swap per-axis loss strategies (grid A1 class-weighted /
+        # A2 focal / focal_weighted). For cfg.train.loss == "bce" (default)
+        # build_loss_fns returns {} and attach is a no-op.
+        loss_fns = build_loss_fns(cfg, vocab, train_df, log=log)
+        attach_loss_fns_to_heads(model, loss_fns, log=log)
 
         return cls(cfg, model, vocab, train_loader, val_loader, device_t, log)
 
@@ -665,6 +707,10 @@ def _build_arg_parser() -> "argparse.ArgumentParser":
                    help="Override cfg.logging.wandb_mode.")
     p.add_argument("--smoke", action="store_true",
                    help="Sugar: --epochs 1 --wandb-mode disabled.")
+    p.add_argument("--init-from-checkpoint", default=None,
+                   help="Override cfg.model.init_from_checkpoint (path to .pt).")
+    p.add_argument("--init-load-heads", action="store_true",
+                   help="Override cfg.model.init_load_heads=True (stack on same-vocab ckpt).")
     return p
 
 
@@ -683,6 +729,10 @@ def _apply_cli_overrides(cfg: BenchmarkConfig, args: Any) -> None:
     if args.wandb_mode is not None:
         cfg.logging.wandb_mode = args.wandb_mode
         cfg.logging.wandb_enabled = args.wandb_mode != "disabled"
+    if args.init_from_checkpoint is not None:
+        cfg.model.init_from_checkpoint = args.init_from_checkpoint
+    if args.init_load_heads:
+        cfg.model.init_load_heads = True
 
 
 def main() -> int:

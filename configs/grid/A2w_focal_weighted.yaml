@@ -1,0 +1,84 @@
+# MCIS Grid A2_weighted — focal + class weights stacked on E1 base, single fold
+# Combines A1 + A2: single-pick uses focal CE with alpha=class_weights,
+# multi-label uses standard focal BCE (alpha=0.25 scalar).
+#
+# Rationale: focal handles "easy vs hard" (per-example), class weights handle
+# "common vs rare" (per-class). Stacking is the strongest single fix expected.
+
+experiment_name: "Grid_A2w_focal_weighted"
+seed: 42
+
+data:
+  parquet: "data/frozen/m1_model_ready/m1_model_ready.parquet"
+  label_vocab: "data/frozen/m1_model_ready/label_vocab.json"
+  cv_folds: "data/frozen/m1_model_ready/cv_folds.csv"
+  module: "M1"
+  text_field: "text_section_tagged"
+  trainable_value: "trainable"
+  test_value: "test"
+
+label_cardinalities:
+  icdo3_topography:     8
+  icdo3_morphology:     24
+  icdo3_behavior:       4
+  icdo3_grade:          3
+  icdo3_laterality:     3
+  icd11_stem:           27
+  icd11_ext_anatomy:    16
+  icd11_ext_histopath:  23
+  icd11_ext_laterality: 6
+  icd11_ext_grading:    5
+
+axis_types:
+  single_pick: [icdo3_topography, icdo3_morphology, icdo3_behavior,
+                icdo3_grade, icdo3_laterality, icd11_stem,
+                icd11_ext_laterality, icd11_ext_grading]
+  multilabel:  [icd11_ext_anatomy, icd11_ext_histopath]
+
+aux_fields: [nuclear_grade, tubular_score, mitosis_score, lvi, dcis_in_specimen]
+
+model:
+  encoder_hf_id: "microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext"
+  segment_size: 128
+  max_segments: 20
+  strict_length: false
+  diagnostic_max_tokens: 512
+  attention_hidden_dim: 256
+  init_from_checkpoint: null
+  init_load_attention: true
+  init_load_heads: false
+  use_aux_histology_heads: false
+  aux_loss_weight: 0.3
+  icd11_two_stage: false
+
+train:
+  epochs: 10
+  micro_batch_size: 8
+  grad_accumulation_steps: 4
+  learning_rate: 3.0e-5
+  warmup_ratio: 0.10
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+  loss: "focal_weighted"        # focal CE with alpha=class_weights
+  focal_gamma: 2.0
+  early_stopping_patience: 3
+  mixed_precision: "bf16"
+
+cv:
+  enabled: true
+  n_folds: 5
+  seed: 42
+
+eval:
+  rare_code_threshold: 10
+  report_rare_separately: true
+  subgroups: [batch, template_flag, is_cancer_primary, nos_topography_derived]
+  test_only_oov_excluded: true
+
+logging:
+  project: "MCIS_AI"
+  run_name: null
+  output_dir: "results"
+  checkpoint_dir: "checkpoints"
+  wandb_enabled: true
+  wandb_mode: "online"

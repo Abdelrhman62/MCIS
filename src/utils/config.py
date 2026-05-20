@@ -38,6 +38,10 @@ class DataConfig:
     text_field: str = "text_section_tagged"  # E1-fmt swaps to text_concatenated
     trainable_value: str = "trainable"
     test_value: str = "test"
+    # Phase 1 (TCGA) only: explicit pre-baked val split (e.g. 'pretrain_val').
+    # When set AND cv.enabled=False, the no-CV branch uses this split as val
+    # instead of slicing 90/10 off trainable. None = legacy 90/10 behavior.
+    val_value: str | None = None
 
 
 @dataclass
@@ -57,6 +61,12 @@ class ModelConfig:
     diagnostic_max_tokens: int = 512
     attention_hidden_dim: int = 256
     init_from_checkpoint: str | None = None
+    # Selective load flags for init_from_checkpoint (handled by
+    # src/utils/checkpoint_loader.load_checkpoint_partial).
+    # Defaults: encoder-only transfer (Phase 1 TCGA → Phase 2 Baheya).
+    # For stacking on same-vocab base (E5a/E5b on E2 ckpt), set both True.
+    init_load_attention: bool = True   # label-wise attention; shape-checked
+    init_load_heads: bool = False      # per-axis heads; False = reset for Phase 2
     use_aux_histology_heads: bool = False  # E3 toggle
     aux_loss_weight: float = 0.3
     icd11_two_stage: bool = False  # E6 toggle

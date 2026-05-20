@@ -1,0 +1,113 @@
+# MCIS B2 — faithful PLM-ICD baseline (Huang et al., ClinicalNLP 2022)
+#
+# Architecture-family comparator (handoff §1.1, must-run). Faithful to
+# PLM-ICD: chunked PubMedBERT encoder + LAAT label-wise attention over a
+# SINGLE flat concatenated label space, single BCE, NO per-axis heads, NO
+# axis masking, NO multi-task decomposition.
+#
+# What this isolates: PLM-ICD uses --model_mode laat (LAAT IS its
+# architecture; verified against MiuLab/PLM-ICD repo). So B2 holds LAAT
+# constant and removes ONLY the per-axis multi-task structure. The
+# B2-vs-E1 delta therefore attributes specifically to MCIS's per-axis
+# decomposition + masking (the thesis novelty), not to attention.
+#
+# Flat label space = 119 = sum of all 10 Baheya axis cardinalities,
+# concatenated in label_vocab.json axis order:
+#   topo(8) morph(24) behav(4) grade(3) lat(3) stem(27)
+#   ext_lat(6) ext_grad(5) ext_anat(16) ext_histo(23)  = 119
+# Row target = union of per-axis gold codes as positives in that 119-vec.
+# Absent/null axis = simply no positive in its slice (NOT a masked class —
+# faithful to PLM-ICD, which has no null concept).
+#
+# Eval: B2's 119-logits are decoded back per-axis (argmax within each
+# single-pick slice; sigmoid>0.5 within each multilabel slice), then scored
+# with the SAME scripts.step1_multimetric.metrics_* functions E1 uses, so
+# the early_stop headline is directly comparable to B1 (0.6351) and
+# E1 (0.5726). Standalone runner; zero touch to train.py / heads.py.
+
+experiment_name: "B2_plmicd"
+seed: 42
+
+data:
+  parquet: "data/frozen/m1_model_ready/m1_model_ready.parquet"
+  label_vocab: "data/frozen/m1_model_ready/label_vocab.json"
+  cv_folds: "data/frozen/m1_model_ready/cv_folds.csv"
+  module: "M1"
+  text_field: "text_section_tagged"   # match E1 exactly
+  trainable_value: "trainable"
+  test_value: "test"
+  val_value: null                     # CV path (5-fold), like E1
+
+# Frozen Baheya M1 vocab (label_vocab.json authoritative). Sum = 119.
+label_cardinalities:
+  icdo3_topography:     8
+  icdo3_morphology:     24
+  icdo3_behavior:       4
+  icdo3_grade:          3
+  icdo3_laterality:     3
+  icd11_stem:           27
+  icd11_ext_laterality: 6
+  icd11_ext_grading:    5
+  icd11_ext_anatomy:    16
+  icd11_ext_histopath:  23
+# icd11_ext_staging excluded (zero examples; arch v6 §6.2). Order above is
+# the label_vocab.json axis order — the runner asserts it matches at load.
+
+axis_types:
+  # Used ONLY by the decoder (which slice is argmax vs threshold) and by
+  # the per-axis eval split. B2's MODEL has no axis concept — flat 119.
+  single_pick: [icdo3_topography, icdo3_morphology, icdo3_behavior,
+                icdo3_grade, icdo3_laterality, icd11_stem,
+                icd11_ext_laterality, icd11_ext_grading]
+  multilabel:  [icd11_ext_anatomy, icd11_ext_histopath]
+
+aux_fields: []   # no aux heads — faithful PLM-ICD has none
+
+model:
+  encoder_hf_id: "microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext"
+  segment_size: 128
+  max_segments: 20      # identical to E1 — only head structure differs
+  strict_length: false
+  diagnostic_max_tokens: 512
+  attention_hidden_dim: 256   # LAAT attn_dim (AxisLabelAttention attn_dim)
+
+  # B2 trains from scratch. No transfer.
+  init_from_checkpoint: null
+  init_load_attention: true
+  init_load_heads: false
+
+  use_aux_histology_heads: false
+  aux_loss_weight: 0.3
+  icd11_two_stage: false
+
+train:
+  epochs: 10                 # match E1
+  micro_batch_size: 8
+  grad_accumulation_steps: 4 # effective batch = 32
+  learning_rate: 3.0e-5
+  warmup_ratio: 0.10
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+  loss: "bce"                # single BCE over flat 119 (PLM-ICD)
+  focal_gamma: 2.0
+  early_stopping_patience: 3
+  mixed_precision: "bf16"    # A100 (M4 smoke ignores / uses no)
+
+cv:
+  enabled: true
+  n_folds: 5
+  seed: 42
+
+eval:
+  rare_code_threshold: 10
+  report_rare_separately: true
+  subgroups: [batch, template_flag, is_cancer_primary]
+  test_only_oov_excluded: true
+
+logging:
+  project: "MCIS_AI"
+  run_name: null
+  output_dir: "results"
+  checkpoint_dir: "checkpoints"
+  wandb_enabled: true
+  wandb_mode: "online"

@@ -31,6 +31,27 @@ from src.data.label_vocab import LabelVocab, _is_null
 from src.utils.config import BenchmarkConfig
 
 
+def _coerce_group_id(val: Any) -> int:
+    """duplicate_group_id → stable int.
+
+    Baheya group ids are integers; TCGA group ids are hex strings
+    (data card §6). This column is bookkeeping only (split-time group
+    awareness; never used in loss/training), so the exact value is
+    irrelevant — only a stable, collisional-safe int is required so
+    collate's LongTensor cast doesn't crash. int-like parses directly;
+    anything else is hashed deterministically (md5, seed-free) so the
+    same group string always maps to the same id within and across runs.
+    """
+    if _is_null(val):
+        return -1
+    try:
+        return int(val)
+    except (ValueError, TypeError):
+        import hashlib
+        h = hashlib.md5(str(val).encode("utf-8")).hexdigest()
+        # 60-bit slice: fits int64 (LongTensor), astronomically low collision
+        return int(h[:15], 16)
+
 # ---------------------------------------------------------------------------
 # Aux histology encoders
 # ---------------------------------------------------------------------------
@@ -217,7 +238,7 @@ class BaheyaM1Dataset(Dataset):
                     aux_targets=aux_t,
                     aux_masks=aux_m,
                     batch=int(row["batch"]) if "batch" in row and not _is_null(row["batch"]) else -1,
-                    duplicate_group_id=int(row["duplicate_group_id"]) if "duplicate_group_id" in row and not _is_null(row["duplicate_group_id"]) else -1,
+                    duplicate_group_id=_coerce_group_id(row["duplicate_group_id"]) if "duplicate_group_id" in row else -1,
                     template_flag=bool(row["template_flag"]) if "template_flag" in row and not _is_null(row["template_flag"]) else False,
                     is_cancer_primary=bool(row["is_cancer_primary"]) if "is_cancer_primary" in row and not _is_null(row["is_cancer_primary"]) else True,
                     fold=int(row["fold"]) if "fold" in row and not _is_null(row["fold"]) else -1,
@@ -333,6 +354,29 @@ def split_trainable_test(
     tr = df[df["split"] == trainable_value].reset_index(drop=True)
     te = df[df["split"] == test_value].reset_index(drop=True)
     return tr, te
+
+
+def split_by_value(
+    df: pd.DataFrame,
+    split_value: str,
+    split_column: str = "split",
+) -> pd.DataFrame:
+    """Return rows where df[split_column] == split_value (index reset).
+
+    Phase 1 (TCGA) uses pre-baked 3-way splits (pretrain_train/val/test);
+    split_trainable_test only does the Baheya 2-way (trainable/test). This
+    pulls one named split without touching that path. Raises if the value
+    is absent so a typo'd config fails loud, not silently empty.
+    """
+    if split_column not in df.columns:
+        raise KeyError(f"DataFrame has no {split_column!r} column")
+    sub = df[df[split_column] == split_value].reset_index(drop=True)
+    if sub.empty:
+        raise ValueError(
+            f"No rows with {split_column}=={split_value!r}. "
+            f"Available: {sorted(df[split_column].dropna().unique().tolist())}"
+        )
+    return sub
 
 
 def split_by_fold(

@@ -1,0 +1,99 @@
+# MCIS E2 — Baheya M1 fine-tune, initialized from TCGA Phase 1 (PubMedBERT)
+#
+# Transfer (arch v6 §4.4): load encoder + label-wise attention from the
+# Phase 1 TCGA checkpoint; RESET per-axis heads (init_load_heads=false)
+# because Phase 1 has only 5 ICD-O-3 axes with TCGA-native vocab, while
+# Baheya M1 has 10 axes (incl. ICD-11) with a different vocab. Resetting
+# heads keeps the transfer claim clean (Phase 1 never sees Baheya label
+# distribution — handoff Task 1, vocab strategy = Option B).
+#
+# Everything else mirrors the Baheya M1 setup (B0.yaml): full 10-axis
+# vocab, 5-fold CV on trainable (seed=42), section-tagged text.
+#
+# NOTE: update init_from_checkpoint per fold/run. Default points at
+# Phase 1 PubMedBERT best.pt. The 5-fold runner / run_phase1.py docs the
+# exact emitted path (checkpoints/Phase1_TCGA_pubmedbert/best.pt).
+
+experiment_name: "E2_baheya_from_tcga"
+seed: 42
+
+data:
+  parquet: "data/frozen/m1_model_ready/m1_model_ready.parquet"
+  label_vocab: "data/frozen/m1_model_ready/label_vocab.json"
+  cv_folds: "data/frozen/m1_model_ready/cv_folds.csv"
+  module: "M1"                       # → Phase 2: all 10 axes active
+  text_field: "text_section_tagged"
+  trainable_value: "trainable"
+  test_value: "test"
+  val_value: null                    # CV path; pre-baked val not used here
+
+# Baheya M1 vocab (label_vocab.json authoritative). Frozen from trainable.
+label_cardinalities:
+  icdo3_topography:     8
+  icdo3_morphology:     24
+  icdo3_behavior:       4
+  icdo3_grade:          3
+  icdo3_laterality:     3
+  icd11_stem:           27
+  icd11_ext_anatomy:    16
+  icd11_ext_histopath:  23
+  icd11_ext_laterality: 6
+  icd11_ext_grading:    5
+# icd11_ext_staging excluded (zero examples, arch v6 §6.2)
+
+axis_types:
+  single_pick: [icdo3_topography, icdo3_morphology, icdo3_behavior,
+                icdo3_grade, icdo3_laterality, icd11_stem,
+                icd11_ext_laterality, icd11_ext_grading]
+  multilabel:  [icd11_ext_anatomy, icd11_ext_histopath]
+
+aux_fields: [nuclear_grade, tubular_score, mitosis_score, lvi, dcis_in_specimen]
+
+model:
+  encoder_hf_id: "microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext"
+  segment_size: 128
+  max_segments: 20
+  strict_length: false
+  diagnostic_max_tokens: 512
+  attention_hidden_dim: 256
+
+  # ---- TCGA → Baheya transfer ----
+  init_from_checkpoint: "checkpoints/Phase1_TCGA_pubmedbert/best.pt"
+  init_load_attention: true     # transfer label-wise attention (shape-checked)
+  init_load_heads: false        # RESET heads — fresh for Baheya 10-axis vocab
+
+  use_aux_histology_heads: false   # E3 off (separate ablation)
+  aux_loss_weight: 0.3
+  icd11_two_stage: false           # E6 off
+
+train:
+  epochs: 10
+  micro_batch_size: 8
+  grad_accumulation_steps: 4   # effective batch = 32
+  learning_rate: 3.0e-5
+  warmup_ratio: 0.10
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+  loss: "bce"                  # E5a swaps to grid-winning loss
+  focal_gamma: 2.0
+  early_stopping_patience: 3
+  mixed_precision: "bf16"      # A100
+
+cv:
+  enabled: true
+  n_folds: 5
+  seed: 42
+
+eval:
+  rare_code_threshold: 10
+  report_rare_separately: true
+  subgroups: [batch, template_flag, is_cancer_primary, nos_topography_derived]
+  test_only_oov_excluded: true
+
+logging:
+  project: "MCIS_AI"
+  run_name: null
+  output_dir: "results"
+  checkpoint_dir: "checkpoints"
+  wandb_enabled: true
+  wandb_mode: "online"
