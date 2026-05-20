@@ -56,7 +56,20 @@ model:
   diagnostic_max_tokens: 512
 
   attention_hidden_dim: 256
+
+  # ---- init_from_checkpoint and selective-load flags ----
+  # init_from_checkpoint: path to a .pt file from a prior run, or null.
+  # Defaults below match architecture v6 §4.4: Phase1→Phase2 transfer loads
+  # encoder + attention; heads reset (because Phase 1 has no ICD-11 heads
+  # and Phase 1 ICD-O-3 vocab differs from Baheya's).
+  #
+  # For E5a/E5b/E6 stacking on a same-vocab E2 ckpt, override in those YAMLs:
+  #     init_from_checkpoint: checkpoints/E2/fold_0/best.pt
+  #     init_load_heads: true
   init_from_checkpoint: null
+  init_load_attention: true     # label-wise attention; shape-checked
+  init_load_heads: false        # per-axis heads; false = reset for Phase 2
+
   use_aux_histology_heads: false   # E3 toggle
   aux_loss_weight: 0.3
   icd11_two_stage: false           # E6 toggle
@@ -92,4 +105,3 @@ logging:
   checkpoint_dir: "checkpoints"
   wandb_enabled: true
   wandb_mode: "online"
-
