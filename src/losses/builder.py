@@ -89,22 +89,30 @@ def _extract_single_pick_targets(
 
 
 def _extract_multi_label_targets(
-    train_df: pd.DataFrame, axis: str, K: int
+    train_df: pd.DataFrame, axis: str, K: int,
+    vocab: "LabelVocab | None" = None
 ) -> np.ndarray:
-    """Get [N, K] binary matrix for a multi-label axis.
-
-    Schema convention (per loaders.py):
-      - column `{axis}_multihot` containing list/np.ndarray of K ints
-        (1=positive, 0=negative)
-    """
+    """Get [N, K] binary matrix for a multi-label axis."""
     col = f"{axis}_multihot"
     if col not in train_df.columns:
+        # Fallback: pipe-delimited string column
+        if axis in train_df.columns and vocab is not None:
+            matrix = np.zeros((len(train_df), K), dtype=np.int64)
+            c2i = vocab.axes[axis].code_to_idx
+            delim = vocab.axes[axis].delimiter or "|"
+            for i, val in enumerate(train_df[axis].tolist()):
+                if not isinstance(val, str) or not val.strip():
+                    continue
+                for code in val.split(delim):
+                    code = code.strip()
+                    if code in c2i:
+                        matrix[i, c2i[code]] = 1
+            return matrix
         raise KeyError(
             f"multi-label axis {axis!r}: column {col!r} not found. "
             f"Available cols: {sorted(train_df.columns)[:20]}..."
         )
     rows = train_df[col].tolist()
-    # Each row is a list/ndarray of length K.
     matrix = np.zeros((len(rows), K), dtype=np.int64)
     for i, row in enumerate(rows):
         if row is None:
@@ -205,7 +213,7 @@ def build_loss_fns(
             log.warning("Axis %r not in vocab — skipping loss build", axis)
             continue
         K = vocab[axis].num_classes
-        targets = _extract_multi_label_targets(train_df, axis, K)
+        targets = _extract_multi_label_targets(train_df, axis, K, vocab)
         pos_weight = compute_inverse_freq_weights_multi_label(targets)
         log.info(
             "  axis=%-22s K=%2d  pos_weight_range=[%.2f, %.2f]  n_pos_mean=%.1f",
