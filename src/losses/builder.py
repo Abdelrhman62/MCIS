@@ -48,7 +48,7 @@ class LossKind(str, Enum):
 
 
 def _extract_single_pick_targets(
-    train_df: pd.DataFrame, axis: str
+    train_df: pd.DataFrame, axis: str, vocab: "LabelVocab | None" = None
 ) -> np.ndarray:
     """Get [N] array of class indices (-1 = null) for a single-pick axis.
 
@@ -70,6 +70,16 @@ def _extract_single_pick_targets(
         if arr.dtype != np.int64:
             arr = pd.to_numeric(arr, errors="coerce").to_numpy()
             arr = np.where(np.isnan(arr), NULL_TARGET_SENTINEL, arr).astype(np.int64)
+        return arr
+    # Fallback: raw string column — encode using vocab
+    if axis in train_df.columns and vocab is not None:
+        codes = train_df[axis].tolist()
+        arr = np.array(
+            [vocab.axes[axis].code_to_idx.get(c, NULL_TARGET_SENTINEL)
+             if isinstance(c, str) else NULL_TARGET_SENTINEL
+             for c in codes],
+            dtype=np.int64,
+        )
         return arr
     raise KeyError(
         f"single-pick axis {axis!r}: neither {idx_col!r} nor a labeled string "
@@ -170,7 +180,7 @@ def build_loss_fns(
             log.warning("Axis %r not in vocab — skipping loss build", axis)
             continue
         K = vocab[axis].num_classes
-        targets = _extract_single_pick_targets(train_df, axis)
+        targets = _extract_single_pick_targets(train_df, axis, vocab)
         weights = compute_inverse_freq_weights_single_pick(
             targets, num_classes=K
         )
