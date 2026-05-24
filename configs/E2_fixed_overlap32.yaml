@@ -19,13 +19,14 @@ encoder:
   overlap_tokens: 32                     # <-- KEY CHANGE vs E2 — 32-token overlap
 
 data:
-  parquet_path: "data/frozen/m1_model_ready/m1_model_ready.parquet"
-  vocab_path: "data/frozen/m1_model_ready/label_vocab.json"
+  parquet: "data/frozen/m1_model_ready/m1_model_ready.parquet"
+  label_vocab: "data/frozen/m1_model_ready/label_vocab.json"
+  cv_folds: "data/frozen/m1_model_ready/cv_folds.csv"
+  module: "M1"
   text_field: "text_section_tagged"
-  split_field: "split"
   trainable_value: "trainable"
   test_value: "test"
-  fold_field: "fold"
+  val_value: null
 
 cv:
   enabled: true
