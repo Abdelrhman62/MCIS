@@ -67,7 +67,7 @@ model:
   icd11_two_stage: false           # E6 off
 
 train:
-  epochs: 10
+  epochs: 20
   micro_batch_size: 8
   grad_accumulation_steps: 4   # effective batch = 32
   learning_rate: 3.0e-5
@@ -76,7 +76,7 @@ train:
   max_grad_norm: 1.0
   loss: "class_weighted"                # E5a swaps to grid-winning loss
   focal_gamma: 2.0
-  early_stopping_patience: 3
+  early_stopping_patience: 5
   mixed_precision: "bf16"      # A100
 
 cv:
