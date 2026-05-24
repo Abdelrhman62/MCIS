@@ -252,8 +252,16 @@ class Trainer:
             val_df = trainable_df.iloc[:n_val].reset_index(drop=True)
             train_df = trainable_df.iloc[n_val:].reset_index(drop=True)
         log.info("Fold %d: train=%d, val=%d", fold_idx, len(train_df), len(val_df))
+        
+        # E5b: inject SEER templates into train fold if augmentation enabled
+        aug_cfg = cfg.augmentation if hasattr(cfg, "augmentation") else {}
+        if isinstance(aug_cfg, dict) and aug_cfg.get("enabled", False):
+            seer_path = aug_cfg.get("seer_parquet", "")
+            if seer_path:
+                from src.data.loaders import inject_seer_templates
+                train_df = inject_seer_templates(train_df, seer_path)
+                log.info("SEER augmentation: train size after inject=%d", len(train_df))
 
-        # 3. Datasets + loaders.
         train_ds = BaheyaM1Dataset(train_df, vocab, cfg)
         val_ds = BaheyaM1Dataset(val_df, vocab, cfg)
         train_loader = DataLoader(

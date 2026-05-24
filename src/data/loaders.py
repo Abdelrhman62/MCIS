@@ -342,6 +342,19 @@ def load_parquet(path: str) -> pd.DataFrame:
     """Read a v3-canonical model-ready parquet."""
     return pd.read_parquet(path)
 
+def inject_seer_templates(
+    train_df: "pd.DataFrame",
+    seer_parquet: str,
+) -> "pd.DataFrame":
+    """Concatenate SEER rare-code augmentation templates into the train fold.
+
+    SEER rows already have template_flag=True and match M1 schema exactly.
+    Appended to train only — val/test folds are never augmented.
+    """
+    seer_df = load_parquet(seer_parquet)
+    seer_df = seer_df[seer_df["template_flag"] == True].copy()
+    combined = pd.concat([train_df, seer_df], ignore_index=True)
+    return combined
 
 def split_trainable_test(
     df: pd.DataFrame,
