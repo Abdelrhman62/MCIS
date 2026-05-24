@@ -131,6 +131,7 @@ class BenchmarkConfig:
     cv: CVConfig = field(default_factory=CVConfig)
     eval: EvalConfig = field(default_factory=EvalConfig)
     logging: LoggingConfig = field(default_factory=LoggingConfig)
+    augmentation: dict = field(default_factory=dict)
 
     # ------------- Convenience accessors -------------
 
