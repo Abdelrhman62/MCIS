@@ -28,24 +28,31 @@ data:
   test_value: "test"
   val_value: null
 
+train:
+  epochs: 30
+  micro_batch_size: 8
+  grad_accumulation_steps: 4
+  learning_rate: 3.0e-5
+  warmup_ratio: 0.10
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+  loss: "bce"
+  focal_gamma: 2.0
+  early_stopping_patience: 5
+  mixed_precision: "bf16"
+
 cv:
   enabled: true
   n_folds: 5
   seed: 42
 
-train:
-  epochs: 30
-  batch_size: 8
-  gradient_accumulation_steps: 4
-  learning_rate: 3.0e-5
-  warmup_steps: 100
-  weight_decay: 0.01
-  early_stopping_patience: 5
-  loss: "bce"
-  precision: "bf16"
-  seed: 42
+eval:
+  rare_code_threshold: 10
+  report_rare_separately: true
 
 logging:
-  wandb_project: "MCIS_AI"
-  wandb_run_name: "E2_fixed_overlap32"
-  log_every_n_steps: 50
+  project: "MCIS_AI"
+  run_name: "E2_fixed_overlap32"
+  output_dir: "results"
+  checkpoint_dir: "checkpoints"
+  wandb_enabled: true
