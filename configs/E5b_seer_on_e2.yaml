@@ -14,7 +14,7 @@
 # Phase 1 PubMedBERT best.pt. The 5-fold runner / run_phase1.py docs the
 # exact emitted path (checkpoints/Phase1_TCGA_pubmedbert/best.pt).
 
-experiment_name: "E5a_class_weighted_on_e2"
+experiment_name: "E5b_seer_on_e2"
 seed: 42
 
 data:
@@ -74,7 +74,7 @@ train:
   warmup_ratio: 0.10
   weight_decay: 0.01
   max_grad_norm: 1.0
-  loss: "class_weighted"                # E5a swaps to grid-winning loss
+  loss: "bce"                # E5a swaps to grid-winning loss
   focal_gamma: 2.0
   early_stopping_patience: 5
   mixed_precision: "bf16"      # A100
@@ -97,3 +97,7 @@ logging:
   checkpoint_dir: "checkpoints"
   wandb_enabled: true
   wandb_mode: "online"
+
+augmentation:
+  enabled: true
+  seer_parquet: "data/frozen/seer_rare_augmentation_model_ready/seer_rare_augmentation_model_ready.parquet"
