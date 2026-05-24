@@ -1,0 +1,77 @@
+# MCIS B1 — TF-IDF + Logistic Regression baseline
+#
+# Strong cheap lexical baseline. CPU-only, ~2 min.
+# NOT an OCE training run — uses a standalone script (scripts/run_b1_tfidf.py).
+# This config exists for schema consistency and experiment registry only.
+#
+# Runner: python scripts/run_b1_tfidf.py --config configs/B1_tfidf.yaml
+
+experiment_name: "B1_tfidf"
+seed: 42
+
+data:
+  parquet: "data/frozen/m1_model_ready/m1_model_ready.parquet"
+  label_vocab: "data/frozen/m1_model_ready/label_vocab.json"
+  cv_folds: "data/frozen/m1_model_ready/cv_folds.csv"
+  module: "M1"
+  text_field: "text_section_tagged"
+  trainable_value: "trainable"
+  test_value: "test"
+  val_value: null
+
+label_cardinalities:
+  icdo3_topography:     8
+  icdo3_morphology:     24
+  icdo3_behavior:       4
+  icdo3_grade:          3
+  icdo3_laterality:     3
+  icd11_stem:           27
+  icd11_ext_anatomy:    16
+  icd11_ext_histopath:  23
+  icd11_ext_laterality: 6
+  icd11_ext_grading:    5
+
+axis_types:
+  single_pick: [icdo3_topography, icdo3_morphology, icdo3_behavior,
+                icdo3_grade, icdo3_laterality, icd11_stem,
+                icd11_ext_laterality, icd11_ext_grading]
+  multilabel:  [icd11_ext_anatomy, icd11_ext_histopath]
+
+# Placeholder model/train sections (not used by B1 script, but required by
+# BenchmarkConfig schema for consistent loading).
+model:
+  encoder_hf_id: "microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext"
+  segment_size: 128
+  max_segments: 20
+
+train:
+  epochs: 1
+  micro_batch_size: 8
+  grad_accumulation_steps: 1
+  learning_rate: 1.0e-3
+  warmup_ratio: 0.0
+  weight_decay: 0.0
+  max_grad_norm: 1.0
+  loss: "bce"
+  focal_gamma: 2.0
+  early_stopping_patience: 1
+  mixed_precision: "no"
+
+cv:
+  enabled: true
+  n_folds: 5
+  seed: 42
+
+eval:
+  rare_code_threshold: 10
+  report_rare_separately: true
+  subgroups: [batch, template_flag, is_cancer_primary, nos_topography_derived]
+  test_only_oov_excluded: true
+
+logging:
+  project: "MCIS_AI"
+  run_name: "B1_tfidf"
+  output_dir: "results"
+  checkpoint_dir: "checkpoints"
+  wandb_enabled: true
+  wandb_mode: "online"

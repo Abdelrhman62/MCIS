@@ -135,13 +135,15 @@ class OncologyCodingEngine(nn.Module):
 
     def forward(
         self,
-        texts: list[str],
+        texts: list[str] | list[list[str]],
         return_encoder_attentions: bool = False,
     ) -> OCEOutput:
         """Run the full pipeline on a batch of raw texts.
 
         Args:
-            texts: List of B raw text strings.
+            texts: List of B raw text strings, OR List of B lists of
+                pre-segmented strings (when segmentation_mode != 'fixed').
+                The encoder auto-detects the format.
             return_encoder_attentions: If True, populate
                 OCEOutput.encoder_attentions with per-segment transformer
                 self-attentions. Default False (saves memory).

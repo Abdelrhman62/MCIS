@@ -194,6 +194,11 @@ class Trainer:
             cfg.train, "loss_weights", None
         )
 
+        # Segmentation config — drives pre-segmentation in _forward().
+        self._seg_mode = cfg.model.segmentation_mode
+        self._seg_overlap = cfg.model.overlap_tokens
+        self._seg_size = cfg.model.segment_size
+
     # ------------- Construction -------------
 
     @classmethod
@@ -561,7 +566,21 @@ class Trainer:
     # ------------- Forward / loss aggregation -------------
 
     def _forward(self, batch: dict[str, Any]) -> OCEOutput:
-        return self.model(batch["texts"])
+        texts = batch["texts"]
+        if self._seg_mode != "fixed":
+            from src.data.segmentation import segment_text
+            texts = [
+                segment_text(
+                    t,
+                    mode=self._seg_mode,
+                    tokenizer=self.model.encoder.tokenizer,
+                    segment_size=self._seg_size,
+                    overlap_tokens=self._seg_overlap,
+                )
+                for t in texts
+            ]
+            # texts is now List[List[str]] — encoder auto-detects pre_segmented
+        return self.model(texts)
 
     def _forward_with_loss(
         self, batch: dict[str, Any]
