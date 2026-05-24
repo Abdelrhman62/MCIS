@@ -57,6 +57,9 @@ class ModelConfig:
     segment_size: int = 128
     max_segments: int = 12
     strict_length: bool = False
+    # Segmentation strategy — default "fixed" preserves all existing behavior.
+    segmentation_mode: str = "fixed"   # "fixed" | "sentence_aware"
+    overlap_tokens: int = 0            # 0 = no overlap; e.g. 32 for sentence-aware overlap
     # Diagnostic only; not enforced by encoder.
     diagnostic_max_tokens: int = 512
     attention_hidden_dim: int = 256
@@ -70,6 +73,24 @@ class ModelConfig:
     use_aux_histology_heads: bool = False  # E3 toggle
     aux_loss_weight: float = 0.3
     icd11_two_stage: bool = False  # E6 toggle
+
+    # --- Validation ---
+    VALID_SEG_MODES = {"fixed", "sentence_aware"}
+
+    def __post_init__(self) -> None:
+        if self.segmentation_mode not in self.VALID_SEG_MODES:
+            raise ValueError(
+                f"segmentation_mode must be one of {self.VALID_SEG_MODES}, "
+                f"got {self.segmentation_mode!r}"
+            )
+        if self.overlap_tokens < 0:
+            raise ValueError(f"overlap_tokens must be >= 0, got {self.overlap_tokens}")
+        if self.segmentation_mode == "fixed" and self.overlap_tokens > 0:
+            import warnings
+            warnings.warn(
+                "overlap_tokens > 0 has no effect when segmentation_mode='fixed'",
+                stacklevel=2,
+            )
 
 
 @dataclass

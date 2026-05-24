@@ -1,0 +1,50 @@
+# E2-SA-OV: Sentence-aware boundaries + 32-token overlap — "best of both"
+# This is the full treatment: sentence-aware splitting AND overlap.
+# If this wins, it becomes the MCIS-Best encoder config.
+# Base: E2 (TCGA pretrain -> Baheya fine-tune), all other hyperparameters identical.
+
+experiment_name: "E2_sa_overlap32"
+
+model:
+  init_from_checkpoint: "checkpoints/Phase1_TCGA_pubmedbert/best.pt"
+  init_load_attention: true
+  init_load_heads: false
+
+encoder:
+  backbone_name: "microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext"
+  segment_size: 128
+  max_segments: 20
+  strict_length: false
+  segmentation_mode: "sentence_aware"   # sentence-aware boundaries
+  overlap_tokens: 32                     # + 32-token overlap
+
+data:
+  parquet_path: "data/frozen/m1_model_ready/m1_model_ready.parquet"
+  vocab_path: "data/frozen/m1_model_ready/label_vocab.json"
+  text_field: "text_section_tagged"
+  split_field: "split"
+  trainable_value: "trainable"
+  test_value: "test"
+  fold_field: "fold"
+
+cv:
+  enabled: true
+  n_folds: 5
+  seed: 42
+
+train:
+  epochs: 30
+  batch_size: 8
+  gradient_accumulation_steps: 4
+  learning_rate: 3.0e-5
+  warmup_steps: 100
+  weight_decay: 0.01
+  early_stopping_patience: 5
+  loss: "bce"
+  precision: "bf16"
+  seed: 42
+
+logging:
+  wandb_project: "MCIS_AI"
+  wandb_run_name: "E2_sa_overlap32"
+  log_every_n_steps: 50

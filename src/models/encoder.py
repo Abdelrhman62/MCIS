@@ -9,7 +9,8 @@ Design decisions (locked in planning sessions):
   (PLM-ICD's encoder; same weights as the deprecated PubMedBERT name).
 - Segmentation: fixed 128-token segments, no overlap, *always* applied
   (S=1 for short inputs). Single code path for Baheya, TCGA, M2 progress
-  notes. No sentence-aware splitting — inherited from PLM-ICD canonical.
+  notes. Sentence-aware splitting is available via pre_segmented=True
+  (upstream segmenter packs segments before the encoder sees them).
 - max_segments cap: 12 segments => 1536-token effective ceiling. Covers
   >99% of TCGA non-BRCA. Configurable.
 - Overflow: middle-drop (keep head and tail segments). Pathology reports
@@ -156,16 +157,24 @@ class OncologyEncoder(nn.Module):
 
     def forward(
         self,
-        texts: list[str],
+        texts: list[str] | list[list[str]],
         return_attentions: bool = False,
+        pre_segmented: bool = False,
     ) -> EncoderOutput:
         """Encode a batch of raw text strings.
 
         Args:
-            texts: List of B raw strings. Tokenization happens inside.
+            texts: When pre_segmented=False (default): List of B raw strings.
+                When pre_segmented=True: List of B lists, each containing
+                pre-packed segment strings that will be tokenized
+                independently (no return_overflowing_tokens).
+                Auto-detection: if texts[0] is a list, pre_segmented is
+                inferred as True regardless of the flag value.
             return_attentions: If True, return per-segment self-attention
                 tensors in EncoderOutput.attentions. Costs memory; use only
                 at inference for diagnostics.
+            pre_segmented: If True, treat texts as already-segmented
+                (List[List[str]]). Default False preserves existing behavior.
 
         Returns:
             EncoderOutput. See dataclass docstring for shapes.
@@ -177,12 +186,21 @@ class OncologyEncoder(nn.Module):
         if len(texts) == 0:
             raise ValueError("texts must be non-empty")
 
+        # Auto-detect pre-segmented input (List[List[str]]).
+        if isinstance(texts[0], list):
+            pre_segmented = True
+
         # Step 1: tokenize each text and segment into chunks of segment_size.
         # Returns a list (one per record) of segment lists (each segment is a
         # dict of input_ids / attention_mask tensors of length segment_size).
-        per_record_segments: list[list[BatchEncoding]] = [
-            self._segment_one_text(t) for t in texts
-        ]
+        if pre_segmented:
+            per_record_segments: list[list[BatchEncoding]] = [
+                self._tokenize_pre_segmented(segs) for segs in texts  # type: ignore[arg-type]
+            ]
+        else:
+            per_record_segments: list[list[BatchEncoding]] = [  # type: ignore[no-redef]
+                self._segment_one_text(t) for t in texts  # type: ignore[arg-type]
+            ]
 
         # Step 2: flatten into a single batch of segments for one encoder call.
         # We track which segments belong to which record so we can reassemble
@@ -323,6 +341,49 @@ class OncologyEncoder(nn.Module):
                     }
                 )
             )
+        return segments
+
+    def _tokenize_pre_segmented(
+        self, segment_texts: list[str],
+    ) -> list[BatchEncoding]:
+        """Tokenize a list of pre-packed segment strings independently.
+
+        Each string is tokenized and truncated to segment_size if needed,
+        but return_overflowing_tokens is OFF — no further splitting occurs.
+        Used when upstream segmentation (e.g. sentence-aware) has already
+        packed the segments.
+
+        Overflow policy (max_segments cap) is applied identically to the
+        fixed-segmentation path.
+        """
+        segments: list[BatchEncoding] = []
+        for seg_text in segment_texts:
+            encoded = self.tokenizer(
+                seg_text,
+                max_length=self.segment_size,
+                truncation=True,
+                return_overflowing_tokens=False,
+                padding="max_length",
+                return_tensors="pt",
+            )
+            # encoded.input_ids: [1, segment_size] — squeeze batch dim.
+            segments.append(
+                BatchEncoding(
+                    {
+                        "input_ids": encoded["input_ids"].squeeze(0),
+                        "attention_mask": encoded["attention_mask"].squeeze(0),
+                    }
+                )
+            )
+
+        # Apply max_segments cap with the same middle-drop policy.
+        if len(segments) > self.max_segments:
+            n_kept = self._handle_overflow(
+                segment_texts[0][:80], len(segments)
+            )
+            keep_indices = self._middle_drop_indices(n_kept, len(segments))
+            segments = [segments[i] for i in keep_indices.tolist()]
+
         return segments
 
     def _handle_overflow(self, text: str, original_n_segs: int) -> int:
