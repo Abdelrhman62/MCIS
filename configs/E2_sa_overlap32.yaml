@@ -6,17 +6,17 @@
 experiment_name: "E2_sa_overlap32"
 
 model:
-  init_from_checkpoint: "checkpoints/Phase1_TCGA_pubmedbert/best.pt"
-  init_load_attention: true
-  init_load_heads: false
-
-encoder:
-  backbone_name: "microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext"
+  encoder_hf_id: "microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext"
   segment_size: 128
   max_segments: 20
   strict_length: false
-  segmentation_mode: "sentence_aware"   # sentence-aware boundaries
-  overlap_tokens: 32                     # + 32-token overlap
+  diagnostic_max_tokens: 512
+  attention_hidden_dim: 256
+  init_from_checkpoint: "checkpoints/Phase1_TCGA_pubmedbert/best.pt"
+  init_load_attention: true
+  init_load_heads: false
+  segmentation_mode: "sentence_aware"
+  overlap_tokens: 32
 
 data:
   parquet: "data/frozen/m1_model_ready/m1_model_ready.parquet"
