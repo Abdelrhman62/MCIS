@@ -182,7 +182,8 @@ class BenchmarkConfig:
             kwargs["label_cardinalities"] = dict(raw["label_cardinalities"] or {})
         if "aux_fields" in raw:
             kwargs["aux_fields"] = list(raw["aux_fields"] or [])
-
+        if "augmentation" in raw:
+            kwargs["augmentation"] = dict(raw["augmentation"] or {})
         valid_top = (
             set(sub_specs)
             | {"experiment_name", "seed", "label_cardinalities", "aux_fields", "augmentation"}
