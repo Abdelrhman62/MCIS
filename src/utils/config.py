@@ -185,7 +185,7 @@ class BenchmarkConfig:
 
         valid_top = (
             set(sub_specs)
-            | {"experiment_name", "seed", "label_cardinalities", "aux_fields"}
+            | {"experiment_name", "seed", "label_cardinalities", "aux_fields", "augmentation"}
         )
         unknown = set(raw) - valid_top
         if unknown:
