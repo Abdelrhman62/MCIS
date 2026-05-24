@@ -4,6 +4,7 @@
 # Difference from E2: overlap_tokens: 32 (fixed boundaries, but segments overlap)
 
 experiment_name: "E2_fixed_overlap32"
+seed: 42
 
 model:
   encoder_hf_id: "microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext"
@@ -15,6 +16,9 @@ model:
   init_from_checkpoint: "checkpoints/Phase1_TCGA_pubmedbert/best.pt"
   init_load_attention: true
   init_load_heads: false
+  use_aux_histology_heads: false
+  aux_loss_weight: 0.3
+  icd11_two_stage: false
   segmentation_mode: "fixed"
   overlap_tokens: 32
 
@@ -27,6 +31,24 @@ data:
   trainable_value: "trainable"
   test_value: "test"
   val_value: null
+
+label_cardinalities:
+  icdo3_topography:     8
+  icdo3_morphology:     24
+  icdo3_behavior:       4
+  icdo3_grade:          3
+  icdo3_laterality:     3
+  icd11_stem:           27
+  icd11_ext_anatomy:    16
+  icd11_ext_histopath:  23
+  icd11_ext_laterality: 6
+  icd11_ext_grading:    5
+
+axis_types:
+  single_pick: [icdo3_topography, icdo3_morphology, icdo3_behavior,
+                icdo3_grade, icdo3_laterality, icd11_stem,
+                icd11_ext_laterality, icd11_ext_grading]
+  multilabel:  [icd11_ext_anatomy, icd11_ext_histopath]
 
 train:
   epochs: 30
@@ -49,6 +71,8 @@ cv:
 eval:
   rare_code_threshold: 10
   report_rare_separately: true
+  subgroups: [batch, template_flag, is_cancer_primary, nos_topography_derived]
+  test_only_oov_excluded: true
 
 logging:
   project: "MCIS_AI"
@@ -56,3 +80,4 @@ logging:
   output_dir: "results"
   checkpoint_dir: "checkpoints"
   wandb_enabled: true
+  wandb_mode: "online"
