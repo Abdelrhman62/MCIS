@@ -209,8 +209,8 @@ __marimo__/
 # =========================
 # MCIS Custom Exclusions
 # =========================
-# Ignore all data files and folders
-data/
+# Ignore all data files and folders in root
+/data/
 *.csv
 *.tsv
 *.json
