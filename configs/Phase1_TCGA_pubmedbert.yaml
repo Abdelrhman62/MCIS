@@ -59,7 +59,7 @@ model:
   icd11_two_stage: false           # E6 off
 
 train:
-  epochs: 20                  # Increased from 5 to prevent early cutoff
+  epochs: 50                  # Increased to 50; relies on early stopping
   micro_batch_size: 8
   grad_accumulation_steps: 4 # effective batch = 32
   learning_rate: 3.0e-5
