@@ -232,3 +232,6 @@ wandb/
 # Ignore environment variables (API keys)
 .env
 checkpoints/
+checkpoints_instance/
+checkpoints_slovenia/
+results_instance/
