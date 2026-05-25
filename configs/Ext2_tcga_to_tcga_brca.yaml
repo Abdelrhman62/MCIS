@@ -27,7 +27,7 @@ model:
 
 data:
   # TODO: update to TCGA-BRCA parquet / vocab when available
-  parquet: "data/frozen/tcga_brca/tcga_brca_model_ready.parquet"
+  parquet: "data/frozen/tcga_brca_external_model_ready/tcga_brca_external_model_ready.parquet"
   label_vocab: "data/frozen/m1_model_ready/label_vocab.json"
   cv_folds: "data/frozen/m1_model_ready/cv_folds.csv"
   module: "M1"

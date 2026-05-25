@@ -18,9 +18,9 @@ experiment_name: "E5b_seer_on_e2"
 seed: 42
 
 data:
-  parquet: "data/frozen/m1_model_ready/m1_model_ready.parquet"
-  label_vocab: "data/frozen/m1_model_ready/label_vocab.json"
-  cv_folds: "data/frozen/m1_model_ready/cv_folds.csv"
+  parquet: "data/frozen/seer_rare_augmentation_model_ready/seer_rare_augmentation_model_ready.parquet"
+  label_vocab: "data/frozen/seer_rare_augmentation_model_ready/label_vocab.json"
+  cv_folds: ""                       # SEER doesn't use CV folds in pretraining
   module: "M1"                       # → Phase 2: all 10 axes active
   text_field: "text_section_tagged"
   trainable_value: "trainable"
@@ -57,10 +57,10 @@ model:
   diagnostic_max_tokens: 512
   attention_hidden_dim: 256
 
-  # ---- TCGA → Baheya transfer ----
-  init_from_checkpoint: "checkpoints/Phase1_TCGA_pubmedbert/best.pt"
-  init_load_attention: true     # transfer label-wise attention (shape-checked)
-  init_load_heads: false        # RESET heads — fresh for Baheya 10-axis vocab
+  # ---- E2 -> E5b (Stack on E2 Baheya) ----
+  init_from_checkpoint: "checkpoints/E2_baheya_from_tcga/best.pt"
+  init_load_attention: true     # transfer label-wise attention
+  init_load_heads: true         # LOAD heads — we are fine-tuning an already-trained Baheya model
 
   use_aux_histology_heads: false   # E3 off (separate ablation)
   aux_loss_weight: 0.3
