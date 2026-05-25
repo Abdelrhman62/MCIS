@@ -59,7 +59,7 @@ model:
   icd11_two_stage: false           # E6 off
 
 train:
-  epochs: 5                  # Phase 1 spec (migration plan §1.1)
+  epochs: 20                  # Increased from 5 to prevent early cutoff
   micro_batch_size: 8
   grad_accumulation_steps: 4 # effective batch = 32
   learning_rate: 3.0e-5
@@ -68,7 +68,7 @@ train:
   max_grad_norm: 1.0
   loss: "bce"                # default CE/BCE; no grid loss in Phase 1
   focal_gamma: 2.0
-  early_stopping_patience: 3
+  early_stopping_patience: 5
   mixed_precision: "bf16"    # A100 default (Ampere+; no scaler bookkeeping)
 
 cv:
