@@ -18,8 +18,8 @@ model:
   strict_length: false
   diagnostic_max_tokens: 512
   attention_hidden_dim: 256
-  # TODO: update to winning experiment's checkpoint path
-  init_from_checkpoint: "checkpoints/Phase1_TCGA_pubmedbert/best.pt"
+  # Updated to winning Phase 1 25ep checkpoint (0.7002 val metric)
+  init_from_checkpoint: "checkpoints/Phase1_TCGA_pubmedbert_25ep/best.pt"
   init_load_attention: true
   init_load_heads: false
   use_aux_histology_heads: false
