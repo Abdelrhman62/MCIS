@@ -202,6 +202,11 @@ class BaheyaM1Dataset(Dataset):
         for i, (_, row) in enumerate(df.iterrows()):
             text = row[text_field]
             text = "" if _is_null(text) else str(text)
+            
+            # Automatically apply section normalizer to raw TCGA text
+            if "[FULL_REPORT_TEXT]" in text:
+                from src.data.section_normalizer import normalize_sections
+                text = normalize_sections(text)
 
             # Single-pick targets.
             singles: dict[str, int] = {}
