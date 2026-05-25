@@ -68,7 +68,7 @@ train:
   max_grad_norm: 1.0
   loss: "bce"                # default CE/BCE; no grid loss in Phase 1
   focal_gamma: 2.0
-  early_stopping_patience: 5
+  early_stopping_patience: 10
   mixed_precision: "bf16"    # A100 default (Ampere+; no scaler bookkeeping)
 
 cv:
