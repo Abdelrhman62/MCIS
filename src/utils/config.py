@@ -73,6 +73,9 @@ class ModelConfig:
     use_aux_histology_heads: bool = False  # E3 toggle
     aux_loss_weight: float = 0.3
     icd11_two_stage: bool = False  # E6 toggle
+    
+    # Hierarchical loss
+    hierarchical_smoothing: float = 0.3
 
     # --- Validation ---
     VALID_SEG_MODES = {"fixed", "sentence_aware"}

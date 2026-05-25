@@ -28,6 +28,7 @@ from src.losses.class_weighted import (
     compute_inverse_freq_weights_multi_label,
 )
 from src.losses.focal import FocalCrossEntropy, FocalBCEWithLogits
+from src.losses.hierarchical import HierarchicalCrossEntropyLoss
 from src.losses.builder import (
     LossKind,
     build_loss_fns,
@@ -39,6 +40,7 @@ __all__ = [
     "WeightedBCEWithLogits",
     "FocalCrossEntropy",
     "FocalBCEWithLogits",
+    "HierarchicalCrossEntropyLoss",
     "compute_inverse_freq_weights_single_pick",
     "compute_inverse_freq_weights_multi_label",
     "LossKind",

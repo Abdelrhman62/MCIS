@@ -98,6 +98,7 @@ def run_inference(
     active_axes: set[str],
     cfg: BenchmarkConfig,
     vocab: LabelVocab,
+    temperature: float = 1.0,
 ) -> dict[str, dict[str, float | int]]:
     """Run inference and compute per-axis metrics. ICD-O-3 only."""
     model.eval()
@@ -110,6 +111,8 @@ def run_inference(
         for axis, logits in outputs.logits_per_axis.items():
             if axis not in ICDO3_AXES:
                 continue
+            if temperature != 1.0:
+                logits = logits / temperature
             all_logits.setdefault(axis, []).append(logits.detach().cpu())
             target_key = f"labels_{axis}"
             if target_key in batch:
@@ -201,6 +204,12 @@ def main() -> int:
     parser.add_argument("--device", default="auto",
                         choices=["auto", "cpu", "mps", "cuda"])
     parser.add_argument("--batch-size", type=int, default=8)
+    parser.add_argument("--normalize-sections", action="store_true",
+                        help="Re-tag TCGA text to match Baheya section tags.")
+    parser.add_argument("--diagnosis-only", action="store_true",
+                        help="Extract and evaluate only the diagnosis section.")
+    parser.add_argument("--temperature", type=float, default=1.0,
+                        help="Temperature scaling factor for logits.")
     args = parser.parse_args()
 
     # Validate inputs
@@ -221,6 +230,22 @@ def main() -> int:
     df = load_parquet(args.data)
     n_records = len(df)
     log.info("Records: %d", n_records)
+
+    if args.normalize_sections or args.diagnosis_only:
+        from src.data.section_normalizer import normalize_sections, extract_diagnosis
+        
+        def process_text(text: str) -> str:
+            if not isinstance(text, str):
+                return ""
+            if args.normalize_sections:
+                text = normalize_sections(text)
+            if args.diagnosis_only:
+                text = extract_diagnosis(text, fallback_to_full=True)
+            return text
+            
+        df["text_section_tagged"] = df["text_section_tagged"].apply(process_text)
+        log.info("Applied text preprocessing: normalize_sections=%s, diagnosis_only=%s", 
+                 args.normalize_sections, args.diagnosis_only)
 
     device = _resolve_device(args.device)
     log.info("Device: %s", device)
@@ -248,8 +273,8 @@ def main() -> int:
         num_workers=0,
     )
 
-    log.info("Running inference on %d records...", n_records)
-    per_axis = run_inference(model, loader, device, active_axes, cfg, vocab)
+    log.info("Running inference on %d records (temperature=%.2f)...", n_records, args.temperature)
+    per_axis = run_inference(model, loader, device, active_axes, cfg, vocab, temperature=args.temperature)
 
     # Compute summary
     icdo3_present = [a for a in ICDO3_AXES if a in per_axis]

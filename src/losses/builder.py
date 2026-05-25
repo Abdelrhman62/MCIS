@@ -36,6 +36,7 @@ from src.losses.class_weighted import (
     compute_inverse_freq_weights_single_pick,
 )
 from src.losses.focal import FocalBCEWithLogits, FocalCrossEntropy
+from src.losses.hierarchical import HierarchicalCrossEntropyLoss
 from src.models.heads import NULL_TARGET_SENTINEL
 
 
@@ -44,6 +45,7 @@ class LossKind(str, Enum):
     CLASS_WEIGHTED = "class_weighted"
     FOCAL = "focal"
     FOCAL_WEIGHTED = "focal_weighted"
+    HIERARCHICAL = "hierarchical"
     APL = "apl"
 
 
@@ -206,6 +208,22 @@ def build_loss_fns(
             fns[axis] = FocalCrossEntropy(
                 gamma=gamma, alpha=weights, axis=axis
             )
+        elif kind == LossKind.HIERARCHICAL:
+            # Requires distance matrix from ontology
+            from src.data.ontology import build_distance_matrices
+            axis_vocabs = {a: list(vocab[a].code_to_idx.keys()) for a in [axis] if a in vocab.axes}
+            matrices = build_distance_matrices(axis_vocabs)
+            if axis in matrices:
+                dist_matrix = torch.from_numpy(matrices[axis])
+                smoothing = float(getattr(cfg.model, "hierarchical_smoothing", 0.3))
+                fns[axis] = HierarchicalCrossEntropyLoss(
+                    dist_matrix, smoothing=smoothing, axis=axis
+                )
+                log.info("    -> using HierarchicalCrossEntropyLoss (smoothing=%.2f)", smoothing)
+            else:
+                log.warning("    -> HIERARCHICAL requested but no ontology for %s, falling back to basic CE", axis)
+                # Fallback to focal if we don't have ontology
+                fns[axis] = FocalCrossEntropy(gamma=0.0, axis=axis)
 
     # Multi-label axes
     for axis in multilabel_axes:
