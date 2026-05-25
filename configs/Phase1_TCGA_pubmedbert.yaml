@@ -11,7 +11,7 @@
 #
 # No CV: single train/val run on the pre-baked splits (data.val_value path).
 
-experiment_name: "Phase1_TCGA_pubmedbert"
+experiment_name: "Phase1_TCGA_pubmedbert_25ep"
 seed: 42
 
 data:
