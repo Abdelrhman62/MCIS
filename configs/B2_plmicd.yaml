@@ -81,7 +81,7 @@ model:
   icd11_two_stage: false
 
 train:
-  epochs: 10                 # match E1
+  epochs: 30                 # match E1
   micro_batch_size: 8
   grad_accumulation_steps: 4 # effective batch = 32
   learning_rate: 3.0e-5
