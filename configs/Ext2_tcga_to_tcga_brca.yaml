@@ -18,7 +18,7 @@ model:
   diagnostic_max_tokens: 512
   attention_hidden_dim: 256
   # TODO: update to E2 best checkpoint path
-  init_from_checkpoint: "checkpoints/E2_baheya_from_tcga/best.pt"
+  init_from_checkpoint: "checkpoints/E2_phase1_25ep/best.pt"
   init_load_attention: true
   init_load_heads: true     # Same vocab → load heads directly
   use_aux_histology_heads: false

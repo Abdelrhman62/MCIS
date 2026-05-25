@@ -48,7 +48,7 @@ model:
   diagnostic_max_tokens: 512
   attention_hidden_dim: 256
 
-  init_from_checkpoint: "checkpoints/Phase1_TCGA_pubmedbert/best.pt"
+  init_from_checkpoint: "checkpoints/Phase1_TCGA_pubmedbert_25ep/best.pt"
   init_load_attention: true
   init_load_heads: false
 

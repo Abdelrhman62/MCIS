@@ -58,7 +58,7 @@ model:
   attention_hidden_dim: 256
 
   # ---- E2 -> E5a (Stack on E2 Baheya) ----
-  init_from_checkpoint: "checkpoints/E2_baheya_from_tcga/best.pt"
+  init_from_checkpoint: "checkpoints/E2_phase1_25ep/best.pt"
   init_load_attention: true     # transfer label-wise attention
   init_load_heads: true         # LOAD heads — we are fine-tuning an already-trained Baheya model
 
