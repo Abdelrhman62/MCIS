@@ -163,17 +163,164 @@ def build_soft_targets(
 
 
 # ---------------------------------------------------------------------------
-# ICD-O-3 Morphology hierarchy (simplified)
+# ICD-O-3 Morphology hierarchy
 # ---------------------------------------------------------------------------
-# Not implementing full morphology hierarchy for now — the morphology
-# OOV issue (33/1025 records) is small and the hierarchy is more complex.
-# Morphology codes are grouped by histological family:
-#   8500-8509: Ductal carcinomas
-#   8520-8524: Lobular carcinomas
-#   8140:      Adenocarcinoma NOS
-#   8470-8480: Mucinous / cystadenocarcinoma
-#   etc.
-# Future work: build a full morphology distance matrix.
+# ICD-O-3 morphology codes follow a 4-digit scheme where the first 3 digits
+# define the histological family and the 4th digit is a variant. Codes
+# sharing a 3-digit prefix are clinically related (e.g., 8500 IDC NOS and
+# 8501 comedocarcinoma are both ductal carcinomas).
+#
+# For breast cancer (Baheya M1 vocab, 24 classes), the families are:
+#
+#   Ductal carcinomas (850x):
+#       8500  Infiltrating duct carcinoma, NOS
+#       8501  Comedocarcinoma, NOS
+#       8502  Secretory carcinoma of breast
+#       8503  Intraductal papillary adenocarcinoma with invasion
+#       8504  Intracystic carcinoma, NOS
+#       8507  Invasive micropapillary carcinoma of breast
+#       8509  Solid papillary carcinoma (in situ / invasive)
+#
+#   Lobular carcinomas (852x):
+#       8520  Lobular carcinoma, NOS
+#       8522  Infiltrating duct and lobular carcinoma (mixed)
+#
+#   Mucinous / cystic (847x–848x):
+#       8470  Mucinous cystadenocarcinoma, NOS
+#       8480  Mucinous adenocarcinoma
+#       8453  Intraductal papillary-mucinous carcinoma, invasive
+#
+#   Adenocarcinoma family (814x–821x):
+#       8140  Adenocarcinoma, NOS
+#       8200  Adenoid cystic carcinoma
+#       8201  Cribriform carcinoma, NOS
+#       8211  Tubular adenocarcinoma
+#
+#   Special breast types:
+#       8510  Medullary carcinoma, NOS
+#       8540  Paget disease of breast
+#       8550  Acinar cell carcinoma
+#       8575  Metaplastic carcinoma, NOS
+#
+#   Non-specific / other:
+#       8010  Carcinoma, NOS
+#       8032  Spindle cell carcinoma, NOS
+#       8050  Papillary carcinoma, NOS
+#       9020  Phyllodes tumor, malignant
+#
+# Distance tiers reflect ICD-O-3 hierarchical structure:
+#   - Same 4-digit code:        0.0 (identity)
+#   - Same 3-digit family:      0.2 (very close — ductal variants)
+#   - Related families:         0.5 (e.g., ductal ↔ lobular, both carcinomas)
+#   - Unrelated families:       0.8 (e.g., ductal ↔ phyllodes)
+#   - NOS ↔ specific:           0.3 (8010 NOS is a parent of most carcinomas)
+
+# Morphology family groupings by 3-digit ICD-O-3 prefix
+_MORPH_FAMILIES: dict[str, set[str]] = {
+    "ductal":       {"8500", "8501", "8502", "8503", "8504", "8507", "8509"},
+    "lobular":      {"8520", "8522"},
+    "mucinous":     {"8470", "8480", "8453"},
+    "adenoca":      {"8140", "8200", "8201", "8211"},
+    "special":      {"8510", "8540", "8550", "8575"},
+    "other":        {"8010", "8032", "8050", "9020"},
+}
+
+# Code-to-family lookup (built from _MORPH_FAMILIES)
+_CODE_TO_FAMILY: dict[str, str] = {}
+for _fam, _codes in _MORPH_FAMILIES.items():
+    for _c in _codes:
+        _CODE_TO_FAMILY[_c] = _fam
+
+# Which families are "related" (histologically close enough that confusion
+# is less severe). Based on carcinoma subtype relationships:
+#   - ductal ↔ lobular (8522 is literally "mixed ductal & lobular")
+#   - ductal ↔ mucinous (mucinous is a ductal variant in some classifications)
+#   - ductal ↔ adenoca (IDC is an adenocarcinoma)
+#   - adenoca ↔ mucinous (mucinous adenocarcinoma)
+_RELATED_FAMILIES: set[frozenset[str]] = {
+    frozenset({"ductal", "lobular"}),
+    frozenset({"ductal", "mucinous"}),
+    frozenset({"ductal", "adenoca"}),
+    frozenset({"adenoca", "mucinous"}),
+    frozenset({"ductal", "special"}),   # medullary/metaplastic are ductal variants
+    frozenset({"lobular", "adenoca"}),
+}
+
+# NOS codes: generic labels that are parents of more specific codes
+_MORPH_NOS_CODES = {"8010"}  # "Carcinoma, NOS" — generic parent
+
+# Distance tier constants
+_MORPH_DISTANCE_SAME = 0.0
+_MORPH_DISTANCE_SAME_FAMILY = 0.2
+_MORPH_DISTANCE_NOS_TO_SPECIFIC = 0.3
+_MORPH_DISTANCE_RELATED_FAMILY = 0.5
+_MORPH_DISTANCE_UNRELATED = 0.8
+_MORPH_DISTANCE_MAX = 1.0
+
+
+def _morphology_distance(code_a: str, code_b: str) -> float:
+    """Compute semantic distance between two ICD-O-3 morphology codes.
+
+    Distance tiers follow the ICD-O-3 hierarchy:
+        0.0  Same code
+        0.2  Same 3-digit family (e.g., 8500 ↔ 8501, both ductal)
+        0.3  NOS ↔ specific carcinoma (8010 is a parent of most codes)
+        0.5  Related families (e.g., ductal ↔ lobular)
+        0.8  Unrelated families (e.g., ductal ↔ phyllodes)
+        1.0  Completely unknown relationship (fallback)
+    """
+    if code_a == code_b:
+        return _MORPH_DISTANCE_SAME
+
+    fam_a = _CODE_TO_FAMILY.get(code_a)
+    fam_b = _CODE_TO_FAMILY.get(code_b)
+
+    # If either code is unknown, max distance
+    if fam_a is None or fam_b is None:
+        return _MORPH_DISTANCE_MAX
+
+    # NOS code (8010) to any specific carcinoma
+    if code_a in _MORPH_NOS_CODES or code_b in _MORPH_NOS_CODES:
+        # 9020 (phyllodes) is NOT a carcinoma, so NOS → phyllodes is far
+        if code_a == "9020" or code_b == "9020":
+            return _MORPH_DISTANCE_UNRELATED
+        return _MORPH_DISTANCE_NOS_TO_SPECIFIC
+
+    # Same family
+    if fam_a == fam_b:
+        return _MORPH_DISTANCE_SAME_FAMILY
+
+    # Related families
+    if frozenset({fam_a, fam_b}) in _RELATED_FAMILIES:
+        return _MORPH_DISTANCE_RELATED_FAMILY
+
+    return _MORPH_DISTANCE_UNRELATED
+
+
+def build_morphology_distance_matrix(
+    vocab_labels: list[str],
+) -> np.ndarray:
+    """Build a distance matrix for ICD-O-3 morphology codes.
+
+    Parameters
+    ----------
+    vocab_labels : list[str]
+        Ordered list of morphology codes as they appear in the label vocab.
+        Example: ["8500", "8520", "8510", ...]
+
+    Returns
+    -------
+    np.ndarray
+        Float32 matrix of shape [K, K] where entry [i, j] is the semantic
+        distance between vocab_labels[i] and vocab_labels[j].
+        0.0 = identical, 1.0 = maximally different.
+    """
+    k = len(vocab_labels)
+    matrix = np.zeros((k, k), dtype=np.float32)
+    for i in range(k):
+        for j in range(k):
+            matrix[i, j] = _morphology_distance(vocab_labels[i], vocab_labels[j])
+    return matrix
 
 
 # ---------------------------------------------------------------------------
@@ -185,7 +332,7 @@ def build_distance_matrices(
 ) -> dict[str, np.ndarray]:
     """Build distance matrices for all axes that have ontology support.
 
-    Currently only topography is supported.
+    Currently supports topography and morphology.
 
     Parameters
     ----------
@@ -202,5 +349,9 @@ def build_distance_matrices(
     if "icdo3_topography" in axis_vocabs:
         matrices["icdo3_topography"] = build_topography_distance_matrix(
             axis_vocabs["icdo3_topography"]
+        )
+    if "icdo3_morphology" in axis_vocabs:
+        matrices["icdo3_morphology"] = build_morphology_distance_matrix(
+            axis_vocabs["icdo3_morphology"]
         )
     return matrices
