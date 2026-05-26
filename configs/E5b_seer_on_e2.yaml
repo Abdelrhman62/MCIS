@@ -18,9 +18,9 @@ experiment_name: "E5b_seer_on_e2"
 seed: 42
 
 data:
-  parquet: "data/frozen/seer_rare_augmentation_model_ready/seer_rare_augmentation_model_ready.parquet"
-  label_vocab: "data/frozen/seer_rare_augmentation_model_ready/label_vocab.json"
-  cv_folds: ""                       # SEER doesn't use CV folds in pretraining
+  parquet: "data/frozen/m1_model_ready/m1_model_ready.parquet"
+  label_vocab: "data/frozen/m1_model_ready/label_vocab.json"
+  cv_folds: "data/frozen/m1_model_ready/cv_folds.csv"
   module: "M1"                       # → Phase 2: all 10 axes active
   text_field: "text_section_tagged"
   trainable_value: "trainable"
