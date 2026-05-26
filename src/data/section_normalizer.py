@@ -207,6 +207,64 @@ def extract_diagnosis(text: str, fallback_to_full: bool = True) -> str:
     return ""
 
 
+
+def reorder_segments_diagnosis_first(
+    text: str,
+    tokenizer,
+    segment_size: int = 128,
+) -> str:
+    """Reorder 128-token segments so [DIAGNOSIS] section appears first.
+
+    For reports where diagnosis appears after specimen descriptions,
+    this ensures label-wise attention sees the diagnosis in segment 1.
+    Falls back to original order if no [DIAGNOSIS] tag found.
+
+    Parameters
+    ----------
+    text : str
+        Pathology report text (raw or normalized).
+    tokenizer : PreTrainedTokenizer
+        HuggingFace tokenizer instance (must match the model's tokenizer).
+    segment_size : int
+        Token count per segment (must match encoder config, default 128).
+
+    Returns
+    -------
+    str
+        Text with segments reordered so diagnosis appears first,
+        or original text if single-segment or no diagnosis found.
+    """
+    if not text or not text.strip():
+        return text
+
+    tokens = tokenizer.encode(text, add_special_tokens=False)
+
+    if len(tokens) <= segment_size:
+        return text  # Single segment — no reordering needed
+
+    # Split into segments
+    segments = []
+    for i in range(0, len(tokens), segment_size):
+        seg_tokens = tokens[i:i + segment_size]
+        seg_text = tokenizer.decode(seg_tokens)
+        segments.append(seg_text)
+
+    # Find segment containing [DIAGNOSIS] or "final diagnosis"
+    diag_idx = None
+    for i, seg in enumerate(segments):
+        lower = seg.lower()
+        if '[diagnosis]' in lower or 'final diagnosis' in lower:
+            diag_idx = i
+            break
+
+    if diag_idx is None or diag_idx == 0:
+        return text  # Already first or not found
+
+    # Reorder: diagnosis segment first, then rest in original order
+    reordered = [segments[diag_idx]] + [s for i, s in enumerate(segments) if i != diag_idx]
+    return ' '.join(reordered)
+
+
 def get_normalization_stats(texts: list[str]) -> dict[str, int]:
     """Compute normalization statistics for a batch of texts.
 

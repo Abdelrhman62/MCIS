@@ -208,6 +208,8 @@ def main() -> int:
                         help="Re-tag TCGA text to match Baheya section tags.")
     parser.add_argument("--diagnosis-only", action="store_true",
                         help="Extract and evaluate only the diagnosis section.")
+    parser.add_argument("--diagnosis-first", action="store_true",
+                        help="Reorder segments so diagnosis section appears first.")
     parser.add_argument("--temperature", type=float, default=1.0,
                         help="Temperature scaling factor for logits.")
     args = parser.parse_args()
@@ -244,8 +246,18 @@ def main() -> int:
             return text
             
         df["text_section_tagged"] = df["text_section_tagged"].apply(process_text)
-        log.info("Applied text preprocessing: normalize_sections=%s, diagnosis_only=%s", 
+        log.info("Applied text preprocessing: normalize_sections=%s, diagnosis_only=%s",
                  args.normalize_sections, args.diagnosis_only)
+
+    if args.diagnosis_first:
+        from transformers import AutoTokenizer
+        from src.data.section_normalizer import reorder_segments_diagnosis_first
+        tokenizer = AutoTokenizer.from_pretrained(cfg.model.encoder_hf_id)
+        seg_size = cfg.model.segment_size
+        df["text_section_tagged"] = df["text_section_tagged"].apply(
+            lambda t: reorder_segments_diagnosis_first(t, tokenizer, seg_size) if isinstance(t, str) else t
+        )
+        log.info("Applied diagnosis-first segment reordering (segment_size=%d)", seg_size)
 
     device = _resolve_device(args.device)
     log.info("Device: %s", device)
