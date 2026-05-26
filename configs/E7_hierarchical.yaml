@@ -73,8 +73,8 @@ train:
   mixed_precision: "bf16"
 
 cv:
-  enabled: false   # Single fold ablation
-  n_folds: 1       # Run fold 0 only
+  enabled: true
+  n_folds: 5
   seed: 42
 
 eval:
