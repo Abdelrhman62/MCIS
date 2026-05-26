@@ -57,10 +57,10 @@ model:
   diagnostic_max_tokens: 512
   attention_hidden_dim: 256
 
-  # ---- E2 -> E5b (Stack on E2 Baheya) ----
-  init_from_checkpoint: "checkpoints/E2_phase1_25ep/best.pt"
+  # ---- E5b (Parallel Ablation from Phase 1) ----
+  init_from_checkpoint: "checkpoints/Phase1_TCGA_pubmedbert_25ep/best.pt"
   init_load_attention: true     # transfer label-wise attention
-  init_load_heads: true         # LOAD heads — we are fine-tuning an already-trained Baheya model
+  init_load_heads: false        # RESET heads for Baheya (Phase 1 has different vocab)
 
   use_aux_histology_heads: false   # E3 off (separate ablation)
   aux_loss_weight: 0.3
