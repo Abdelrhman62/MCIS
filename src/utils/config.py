@@ -76,6 +76,9 @@ class ModelConfig:
     
     # Hierarchical loss
     hierarchical_smoothing: float = 0.3
+    
+    # E9: Description initialized label queries
+    description_init: bool = False
 
     # --- Validation ---
     VALID_SEG_MODES = {"fixed", "sentence_aware"}
