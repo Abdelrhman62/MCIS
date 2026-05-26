@@ -1,14 +1,13 @@
 # MCIS MCIS-Best — Headline reproducibility run
 #
-# Best config from {E1, E2, E5a, E5b} experiments, run with 3 seeds × 5 folds
-# to produce mean ± std headline numbers for the paper.
+# Best config from {E1, E2, E5a, E5b, E7} experiments.
+# WINNER: E7 (Hierarchical Loss) scored 0.6746 ± 0.0061, beating E2 by +0.011.
 #
-# TEMPLATE: update init_from_checkpoint and segmentation settings once the
-# winning experiment is determined. Currently templated from E2.
+# Run with 3 seeds × 5 folds to produce mean ± std headline numbers for the paper.
 #
 # RunPod Secure A100, ~12 h total (3 seeds × 5 folds × ~45 min each).
 
-experiment_name: "MCIS_Best"
+experiment_name: "MCIS_Best_E7"
 seed: 42    # Override per seed: --seed 42 / --seed 123 / --seed 456
 
 model:
@@ -25,6 +24,9 @@ model:
   use_aux_histology_heads: false
   aux_loss_weight: 0.3
   icd11_two_stage: false
+  
+  # Enable hierarchical ontology-aware smoothing (E7 Winner)
+  hierarchical_smoothing: 0.3
 
 data:
   parquet: "data/frozen/m1_model_ready/m1_model_ready.parquet"
@@ -62,7 +64,7 @@ train:
   warmup_ratio: 0.10
   weight_decay: 0.01
   max_grad_norm: 1.0
-  loss: "bce"
+  loss: "hierarchical"
   focal_gamma: 2.0
   early_stopping_patience: 5
   mixed_precision: "bf16"
