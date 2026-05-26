@@ -221,9 +221,9 @@ def build_loss_fns(
                 )
                 log.info("    -> using HierarchicalCrossEntropyLoss (smoothing=%.2f)", smoothing)
             else:
-                log.warning("    -> HIERARCHICAL requested but no ontology for %s, falling back to basic CE", axis)
-                # Fallback to focal if we don't have ontology
-                fns[axis] = FocalCrossEntropy(gamma=0.0, axis=axis)
+                log.warning("    -> HIERARCHICAL requested but no ontology for %s, falling back to focal", axis)
+                # Fallback to focal if we don't have ontology, respecting gamma
+                fns[axis] = FocalCrossEntropy(gamma=gamma, axis=axis)
 
     # Multi-label axes
     for axis in multilabel_axes:
