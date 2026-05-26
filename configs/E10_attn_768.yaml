@@ -68,7 +68,7 @@ train:
   weight_decay: 0.01
   max_grad_norm: 1.0
   loss: "hierarchical"   # Use hierarchical loss
-  focal_gamma: 2.0
+  focal_gamma: 0.0
   early_stopping_patience: 5
   mixed_precision: "bf16"
 
