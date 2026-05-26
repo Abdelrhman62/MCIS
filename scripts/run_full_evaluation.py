@@ -409,6 +409,8 @@ def main() -> int:
     parser.add_argument("--output", type=Path, default=Path("results/full_eval.md"))
     parser.add_argument("--device", default="auto")
     parser.add_argument("--batch-size", type=int, default=8)
+    parser.add_argument("--no-split-filter", action="store_true", help="Evaluate all records in the parquet without split filtering")
+    parser.add_argument("--diagnosis-first", action="store_true", help="Reorder segments to place [DIAGNOSIS] at the front")
     args = parser.parse_args()
 
     for p, n in [(args.checkpoint, "checkpoint"), (args.config, "config"),
@@ -423,7 +425,9 @@ def main() -> int:
 
     # Load and filter data
     df = load_parquet(args.data)
-    if args.split == "test":
+    if args.no_split_filter:
+        log.info("Skipping split filtering (--no-split-filter), evaluating all %d records.", len(df))
+    elif args.split == "test":
         df = df[df["split"] == cfg.data.test_value].copy()
         log.info("Test split: %d records", len(df))
     elif args.split == "val_fold":
@@ -435,6 +439,16 @@ def main() -> int:
     else:
         log.error("Unknown split: %s", args.split)
         return 1
+
+    if args.diagnosis_first:
+        from transformers import AutoTokenizer
+        from src.data.section_normalizer import reorder_segments_diagnosis_first
+        tokenizer = AutoTokenizer.from_pretrained(cfg.model.encoder_hf_id)
+        seg_size = cfg.model.segment_size
+        df["text_section_tagged"] = df["text_section_tagged"].apply(
+            lambda t: reorder_segments_diagnosis_first(t, tokenizer, seg_size) if isinstance(t, str) else t
+        )
+        log.info("Applied diagnosis-first segment reordering (segment_size=%d)", seg_size)
 
     n_records = len(df)
     if n_records == 0:
