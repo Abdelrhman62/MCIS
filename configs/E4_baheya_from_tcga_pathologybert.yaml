@@ -45,6 +45,9 @@ model:
   diagnostic_max_tokens: 512
   attention_hidden_dim: 256
 
+  # Enable hierarchical ontology-aware smoothing (E7 Winner environment)
+  hierarchical_smoothing: 0.3
+
   # ---- TCGA → Baheya transfer (PathologyBERT) ----
   init_from_checkpoint: "checkpoints/Phase1_TCGA_pathologybert_25ep/best.pt"
   init_load_attention: true     # transfer label-wise attention (shape-checked)
@@ -62,8 +65,8 @@ train:
   warmup_ratio: 0.10
   weight_decay: 0.01
   max_grad_norm: 1.0
-  loss: "bce"
-  focal_gamma: 2.0
+  loss: "hierarchical"
+  focal_gamma: 0.0
   early_stopping_patience: 5
   mixed_precision: "bf16"
 
