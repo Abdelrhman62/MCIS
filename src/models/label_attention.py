@@ -75,6 +75,7 @@ class AxisLabelAttention(nn.Module):
         hidden_dim: int,
         num_labels: int,
         attn_dim: int | None = None,
+        description_embeddings: torch.Tensor | None = None,
     ) -> None:
         """Initialize attention for one axis.
 
@@ -85,6 +86,11 @@ class AxisLabelAttention(nn.Module):
             attn_dim: Attention projection dimension a. Defaults to
                 hidden_dim. PLM-ICD uses hidden_dim; LAAT paper used 512
                 regardless of encoder. We follow PLM-ICD's default.
+            description_embeddings: Optional [K, attn_dim] tensor of
+                pre-computed embeddings (e.g., PubMedBERT [CLS] vectors
+                of label descriptions). When provided, label_queries are
+                initialized from these instead of Xavier uniform. The
+                embeddings are still trainable — this only changes init.
 
         Raises:
             ValueError: If hidden_dim or num_labels is non-positive.
@@ -107,7 +113,18 @@ class AxisLabelAttention(nn.Module):
             torch.empty(num_labels, self.attn_dim)
         )
 
-        self._init_parameters()
+        if description_embeddings is not None:
+            # E9: Initialize from pre-computed description embeddings
+            assert description_embeddings.shape == (num_labels, self.attn_dim), (
+                f"description_embeddings shape {description_embeddings.shape} "
+                f"!= expected ({num_labels}, {self.attn_dim})"
+            )
+            with torch.no_grad():
+                self.label_queries.copy_(description_embeddings)
+            # Still init the projection with Xavier
+            nn.init.xavier_uniform_(self.input_projection.weight)
+        else:
+            self._init_parameters()
 
     def _init_parameters(self) -> None:
         """Initialize parameters per LAAT defaults.
@@ -196,6 +213,7 @@ class MultiAxisLabelAttention(nn.Module):
         hidden_dim: int,
         axis_label_counts: dict[str, int],
         attn_dim: int | None = None,
+        description_embeddings: dict[str, torch.Tensor] | None = None,
     ) -> None:
         """Initialize multi-axis attention.
 
@@ -205,6 +223,9 @@ class MultiAxisLabelAttention(nn.Module):
                 that axis. E.g., {'morphology': 24, 'icd11_stem': 27, ...}.
             attn_dim: Attention projection dimension, shared across axes.
                 Defaults to hidden_dim.
+            description_embeddings: Optional mapping axis_name -> [K, attn_dim]
+                tensor of pre-computed label description embeddings. Axes not
+                present in the dict use Xavier init (default).
 
         Raises:
             ValueError: If axis_label_counts is empty.
@@ -216,12 +237,14 @@ class MultiAxisLabelAttention(nn.Module):
         self.hidden_dim = hidden_dim
         self.axis_names: list[str] = list(axis_label_counts.keys())
 
+        desc_embs = description_embeddings or {}
         self.attentions = nn.ModuleDict(
             {
                 axis: AxisLabelAttention(
                     hidden_dim=hidden_dim,
                     num_labels=k,
                     attn_dim=attn_dim,
+                    description_embeddings=desc_embs.get(axis),
                 )
                 for axis, k in axis_label_counts.items()
             }

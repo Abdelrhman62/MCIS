@@ -85,6 +85,7 @@ class OncologyCodingEngine(nn.Module):
         single_pick_spec: dict[str, int],
         multi_label_spec: dict[str, int],
         attn_dim: int | None = None,
+        description_embeddings: dict[str, torch.Tensor] | None = None,
     ) -> None:
         """Compose encoder + attention + heads.
 
@@ -97,6 +98,9 @@ class OncologyCodingEngine(nn.Module):
                 Same dict passed to MultiTaskHeads.
             attn_dim: Optional attention projection dim, shared across all axes.
                 Defaults to encoder.hidden_dim (matches PLM-ICD).
+            description_embeddings: Optional mapping axis_name -> [K, attn_dim]
+                tensor. When provided, label attention queries are initialized
+                from these embeddings instead of Xavier uniform (E9 experiment).
 
         Raises:
             ValueError: If single_pick_spec and multi_label_spec have any
@@ -121,6 +125,7 @@ class OncologyCodingEngine(nn.Module):
             hidden_dim=encoder.hidden_dim,
             axis_label_counts=axis_label_counts,
             attn_dim=attn_dim,
+            description_embeddings=description_embeddings,
         )
 
         self.heads = MultiTaskHeads(
@@ -253,6 +258,9 @@ class OncologyCodingEngine(nn.Module):
                 'attention': {
                     'attn_dim': 768,    # optional, defaults to encoder.hidden_dim
                 },
+                'description_init': {   # optional, E9 experiment
+                    'vocab_codes': {axis_name: [code1, code2, ...], ...},
+                },
             }
 
         Args:
@@ -280,9 +288,103 @@ class OncologyCodingEngine(nn.Module):
         attention_cfg = cfg.get("attention", {})
         attn_dim = attention_cfg.get("attn_dim")
 
+        # E9: optionally compute description embeddings for label queries
+        desc_embeddings: dict[str, torch.Tensor] | None = None
+        desc_cfg = cfg.get("description_init")
+        if desc_cfg is not None:
+            desc_embeddings = cls._compute_description_embeddings(
+                encoder=encoder,
+                vocab_codes=desc_cfg["vocab_codes"],
+                attn_dim=attn_dim or encoder.hidden_dim,
+            )
+
         return cls(
             encoder=encoder,
             single_pick_spec=single_pick,
             multi_label_spec=multi_label,
             attn_dim=attn_dim,
+            description_embeddings=desc_embeddings,
         )
+
+    @staticmethod
+    def _compute_description_embeddings(
+        encoder: OncologyEncoder,
+        vocab_codes: dict[str, list[str]],
+        attn_dim: int,
+    ) -> dict[str, torch.Tensor]:
+        """Compute PubMedBERT [CLS] embeddings of label descriptions.
+
+        Runs each label's WHO description through the encoder's backbone
+        tokenizer + model and extracts the [CLS] embedding. If the backbone
+        hidden_dim differs from attn_dim, a linear projection is applied.
+
+        This runs ONCE at model construction time. Zero cost at training or
+        inference time.
+
+        Args:
+            encoder: The already-constructed OncologyEncoder (has .backbone
+                and .tokenizer).
+            vocab_codes: Mapping axis_name -> ordered list of code strings.
+            attn_dim: Target dimension for the label queries.
+
+        Returns:
+            Mapping axis_name -> [K, attn_dim] tensor of embeddings.
+        """
+        import logging
+        log = logging.getLogger("mcis.oce")
+
+        from src.data.label_descriptions import get_descriptions_for_axis
+
+        log.info("Computing description embeddings for %d axes", len(vocab_codes))
+
+        backbone = encoder.backbone
+        tokenizer = encoder.tokenizer
+        hidden_dim = encoder.hidden_dim
+
+        # Move backbone to eval mode temporarily (no dropout during embedding)
+        was_training = backbone.training
+        backbone.eval()
+
+        embeddings: dict[str, torch.Tensor] = {}
+
+        with torch.no_grad():
+            for axis_name, codes in vocab_codes.items():
+                descriptions = get_descriptions_for_axis(axis_name, codes)
+
+                axis_embs = []
+                for desc in descriptions:
+                    inputs = tokenizer(
+                        desc,
+                        return_tensors="pt",
+                        padding=True,
+                        truncation=True,
+                        max_length=64,
+                    )
+                    # Move to same device as backbone
+                    device = next(backbone.parameters()).device
+                    inputs = {k: v.to(device) for k, v in inputs.items()}
+                    outputs = backbone(**inputs)
+                    # [CLS] token embedding
+                    cls_emb = outputs.last_hidden_state[:, 0, :]  # [1, hidden_dim]
+                    axis_embs.append(cls_emb.squeeze(0))
+
+                # Stack: [K, hidden_dim]
+                emb_matrix = torch.stack(axis_embs, dim=0)
+
+                # Project to attn_dim if different from hidden_dim
+                if attn_dim != hidden_dim:
+                    proj = torch.nn.Linear(hidden_dim, attn_dim, bias=False)
+                    torch.nn.init.xavier_uniform_(proj.weight)
+                    emb_matrix = proj(emb_matrix)
+
+                embeddings[axis_name] = emb_matrix.cpu()
+                log.info(
+                    "  %s: %d labels, embedding shape %s",
+                    axis_name, len(codes), tuple(emb_matrix.shape),
+                )
+
+        # Restore training mode
+        if was_training:
+            backbone.train()
+
+        return embeddings

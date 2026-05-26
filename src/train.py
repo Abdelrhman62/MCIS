@@ -336,7 +336,7 @@ class Trainer:
             for axis in cfg.axis_types.multilabel
             if axis in vocab.axes
         }
-        return {
+        out = {
             "encoder": {
                 "backbone_name": cfg.model.encoder_hf_id,
                 "segment_size": cfg.model.segment_size,
@@ -351,6 +351,19 @@ class Trainer:
                 "attn_dim": cfg.model.attention_hidden_dim,
             },
         }
+
+        # E9: description-initialized label queries
+        if getattr(cfg.model, "description_init", False):
+            all_axes = {**single_pick_spec, **multi_label_spec}
+            out["description_init"] = {
+                "vocab_codes": {
+                    axis: list(vocab[axis].codes)
+                    for axis in all_axes
+                    if axis in vocab.axes
+                },
+            }
+
+        return out
 
     # ------------- Optimizer / scheduler -------------
 
