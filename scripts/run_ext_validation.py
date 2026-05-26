@@ -1,26 +1,20 @@
 """External validation — inference on TCGA-BRCA using a saved checkpoint.
 
 Evaluates ICD-O-3 axes ONLY. TCGA ICD-11 is silver-standard and never scored.
+Now upgraded to include all comprehensive metrics (Ranking, ECE, Subgroups, etc.)
 
 Usage:
-    python -m src.run_ext_validation \
-        --checkpoint checkpoints/E2_baheya_from_tcga/best.pt \
-        --data data/frozen/tcga_brca_external_model_ready/tcga_brca_external_model_ready.parquet \
-        --vocab data/frozen/m1_model_ready/label_vocab.json \
-        --config configs/E2_baheya_from_tcga.yaml \
-        --output results/ext_val_E2.md \
-        --device cuda
-
-    # Ext-1 (E1 checkpoint):
-    python -m src.run_ext_validation \
-        --checkpoint checkpoints/E1/best.pt \
-        --config configs/E1.yaml \
-        --output results/ext_val_E1.md
+    python scripts/run_ext_validation.py \
+        --checkpoint checkpoints/MCIS_Best_seed456_fold1/best.pt \
+        --config configs/MCIS_Best.yaml \
+        --output results/ext_val_MCIS_Best.md \
+        --device cuda \
+        --diagnosis-first
 """
 from __future__ import annotations
 
 import argparse
-import json
+from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
@@ -30,11 +24,23 @@ from torch.utils.data import DataLoader
 
 from src.data.label_vocab import LabelVocab
 from src.data.loaders import BaheyaM1Dataset, collate_m1, load_parquet
-from src.eval.metrics import aggregate_axis_metrics, f1_macro_singlepick, f1_multilabel
+from src.eval.metrics import NULL_TARGET_SENTINEL
 from src.models.oce import OncologyCodingEngine
 from src.utils.config import BenchmarkConfig
 from src.utils.logging import setup_console_logger
 from src.utils.seed import set_seed
+
+# Import metric calculators from the full evaluation script
+from scripts.run_full_evaluation import (
+    compute_singlepick_metrics,
+    compute_ranking_metrics,
+    compute_rare_common_f1,
+    compute_ece,
+    compute_cohen_kappa,
+    compute_subgroup_f1,
+)
+
+log = setup_console_logger("mcis.ext_val")
 
 # ICD-O-3 axes only — never evaluate TCGA ICD-11 (silver labels)
 ICDO3_AXES = [
@@ -91,20 +97,12 @@ def _build_model_cfg(cfg: BenchmarkConfig, vocab: LabelVocab) -> dict[str, Any]:
 
 
 @torch.no_grad()
-def run_inference(
-    model: OncologyCodingEngine,
-    loader: DataLoader,
-    device: torch.device,
-    active_axes: set[str],
-    cfg: BenchmarkConfig,
-    vocab: LabelVocab,
-    temperature: float = 1.0,
-) -> dict[str, dict[str, float | int]]:
-    """Run inference and compute per-axis metrics. ICD-O-3 only."""
+def run_inference(model, loader, device, temperature=1.0):
+    """Collect logits, targets, and metadata for all records."""
     model.eval()
-
-    all_logits: dict[str, list[torch.Tensor]] = {}
-    all_targets: dict[str, list[torch.Tensor]] = {}
+    all_logits: dict[str, list] = defaultdict(list)
+    all_targets: dict[str, list] = defaultdict(list)
+    all_meta: dict[str, list] = defaultdict(list)
 
     for batch in loader:
         outputs = model(batch["texts"])
@@ -113,80 +111,109 @@ def run_inference(
                 continue
             if temperature != 1.0:
                 logits = logits / temperature
-            all_logits.setdefault(axis, []).append(logits.detach().cpu())
-            target_key = f"labels_{axis}"
-            if target_key in batch:
-                all_targets.setdefault(axis, []).append(batch[target_key].detach().cpu())
+            all_logits[axis].append(logits.detach().cpu().numpy())
+            tkey = f"labels_{axis}"
+            if tkey in batch:
+                t = batch[tkey]
+                all_targets[axis].append(t.numpy() if isinstance(t, torch.Tensor) else t)
+        
+        # metadata
+        for key in ["batch", "template_flag", "is_cancer_primary"]:
+            if key in batch:
+                v = batch[key]
+                all_meta[key].append(v.numpy() if isinstance(v, torch.Tensor) else np.array(v))
 
-    per_axis: dict[str, dict[str, float | int]] = {}
-    for axis, logits_list in all_logits.items():
-        if axis not in all_targets:
-            continue
-        logits_cat = torch.cat(logits_list, dim=0)
-        targets_cat = torch.cat(all_targets[axis], dim=0)
-        if axis in cfg.axis_types.single_pick:
-            num_classes = vocab[axis].num_classes
-            per_axis[axis] = f1_macro_singlepick(
-                logits_cat, targets_cat, num_classes=num_classes
-            )
-        else:
-            per_axis[axis] = f1_multilabel(logits_cat, targets_cat)
-
-    return per_axis
+    out_logits = {a: np.concatenate(v) for a, v in all_logits.items()}
+    out_targets = {a: np.concatenate(v) for a, v in all_targets.items()}
+    out_meta = {k: np.concatenate(v) for k, v in all_meta.items()}
+    return out_logits, out_targets, out_meta
 
 
-def format_report(
-    per_axis: dict[str, dict[str, float | int]],
-    checkpoint_path: str,
-    data_path: str,
-    n_records: int,
-) -> str:
-    """Format results as a markdown report."""
-    icdo3_present = [a for a in ICDO3_AXES if a in per_axis]
-    f1_scores = [per_axis[a]["f1_macro"] for a in icdo3_present]
-    mean_f1 = float(np.mean(f1_scores)) if f1_scores else 0.0
+def format_report(per_axis, ranking, rare_common, subgroup_rows,
+                  ece_dict, kappa, args, n_records) -> str:
+    lines = ["# External Validation Report (TCGA)", "",
+             f"**Checkpoint:** `{args.checkpoint}`",
+             f"**Config:** `{args.config}`",
+             f"**Data:** `{args.data}`",
+             f"**Preprocessing:** normalize_sections={args.normalize_sections}, diagnosis_only={args.diagnosis_only}, diagnosis_first={args.diagnosis_first}",
+             f"**Records evaluated:** {n_records}", 
+             f"**Axes evaluated:** ICD-O-3 only (TCGA ICD-11 excluded — silver labels)", ""]
 
-    lines = [
-        "# External Validation Report",
-        "",
-        f"**Checkpoint:** `{checkpoint_path}`",
-        f"**Data:** `{data_path}`",
-        f"**Records:** {n_records}",
-        f"**Axes evaluated:** ICD-O-3 only (TCGA ICD-11 excluded — silver labels)",
-        "",
-        "## Results",
-        "",
-        f"**Mean ICD-O-3 F1-Macro: {mean_f1:.4f}**",
-        "",
-        "| Axis | F1-Macro | F1-Macro (present) | N valid | N classes |",
-        "|---|---|---|---|---|",
-    ]
+    # Summary table
+    lines += ["## 1. Per-Axis Metrics", "",
+              "| Axis | F1-Macro | F1-Micro | Prec-Macro | Rec-Macro | F1-Present | Acc | N |",
+              "|---|---|---|---|---|---|---|---|"]
+    f1s = []
     for axis in ICDO3_AXES:
         if axis not in per_axis:
-            lines.append(f"| {axis} | — | — | — | — |")
+            lines.append(f"| {axis} | — | — | — | — | — | — | — |")
             continue
         m = per_axis[axis]
-        lines.append(
-            f"| {axis} | {m['f1_macro']:.4f} | {m.get('f1_macro_present', 0.0):.4f} "
-            f"| {m.get('n_valid', m.get('n_records', 0))} | {m.get('n_classes_present', '—')} |"
-        )
+        f1s.append(m["f1_macro"])
+        lines.append(f"| {axis} | {m['f1_macro']:.4f} | {m['f1_micro']:.4f} | "
+                     f"{m['precision_macro']:.4f} | {m['recall_macro']:.4f} | "
+                     f"{m['f1_macro_present']:.4f} | {m['accuracy']:.4f} | {m['n_valid']} |")
+    
+    if f1s:
+        lines.append(f"| **Mean** | **{np.mean(f1s):.4f}** | | | | | | |")
+    lines.append("")
 
-    lines += [
-        "",
-        "## Notes",
-        "- ICD-O-3 F1-Macro computed across all K classes (zero-fill for unseen classes).",
-        "- Records with NULL_TARGET_SENTINEL (missing label) excluded per axis.",
-        "- TCGA ICD-11 codes are silver (mapped from ICD-O-3, not natively coded) — never scored.",
-    ]
+    # Ranking table
+    lines += ["## 2. Ranking Metrics", "",
+              "| Axis | P@1 | Top-3 Acc | P@5 | R@5 | AUC-ROC |",
+              "|---|---|---|---|---|---|"]
+    for axis in ICDO3_AXES:
+        if axis not in ranking:
+            continue
+        m = ranking[axis]
+        lines.append(f"| {axis} | {m['p_at_1']:.4f} | {m['top3_acc']:.4f} | "
+                     f"{m['p_at_5']:.4f} | {m['r_at_5']:.4f} | {m['auc_roc_macro']:.4f} |")
+    lines.append("")
+
+    # Rare vs Common
+    lines += ["## 3. Rare vs Common Code F1", "",
+              "| Axis | Rare F1 | Common F1 | #Rare | #Common |",
+              "|---|---|---|---|---|"]
+    for axis in ICDO3_AXES:
+        if axis not in rare_common:
+            continue
+        m = rare_common[axis]
+        lines.append(f"| {axis} | {m['rare_f1']:.4f} | {m['common_f1']:.4f} | "
+                     f"{m['n_rare']} | {m['n_common']} |")
+    lines.append("")
+
+    # Calibration
+    lines += ["## 4. Calibration (ECE)", "",
+              "| Axis | ECE |", "|---|---|"]
+    for axis in ICDO3_AXES:
+        if axis not in ece_dict:
+            continue
+        ece = ece_dict[axis]
+        lines.append(f"| {axis} | {ece:.4f} |")
+    lines.append("")
+
+    # Cohen's kappa
+    if kappa is not None:
+        lines += [f"## 5. Grade Ordinal — Cohen's κ (quadratic)", "",
+                  f"**κ = {kappa:.4f}**", ""]
+
+    # Subgroup
+    if subgroup_rows:
+        lines += ["## 6. Subgroup-Stratified F1-Macro", "",
+                  "| Subgroup | Axis | F1-Macro | N |",
+                  "|---|---|---|---|"]
+        for r in subgroup_rows:
+            if r['axis'] in ICDO3_AXES:
+                lines.append(f"| {r['subgroup']} | {r['axis']} | {r['f1_macro']:.4f} | {r['n']} |")
+        lines.append("")
+
     return "\n".join(lines)
 
 
 def main() -> int:
-    log = setup_console_logger("mcis.ext_val")
-
     parser = argparse.ArgumentParser(
-        prog="python -m src.run_ext_validation",
-        description="External validation on TCGA-BRCA.",
+        prog="python -m scripts.run_ext_validation",
+        description="External validation on TCGA-BRCA with full metrics.",
     )
     parser.add_argument("--checkpoint", type=Path, required=True,
                         help="Path to best.pt checkpoint.")
@@ -199,7 +226,7 @@ def main() -> int:
                         default=Path("data/frozen/m1_model_ready/label_vocab.json"),
                         help="Baheya label_vocab.json path.")
     parser.add_argument("--output", type=Path,
-                        default=Path("results/ext_validation.md"),
+                        default=Path("results/ext_validation_full.md"),
                         help="Output markdown report path.")
     parser.add_argument("--device", default="auto",
                         choices=["auto", "cpu", "mps", "cuda"])
@@ -286,9 +313,48 @@ def main() -> int:
     )
 
     log.info("Running inference on %d records (temperature=%.2f)...", n_records, args.temperature)
-    per_axis = run_inference(model, loader, device, active_axes, cfg, vocab, temperature=args.temperature)
+    logits_dict, targets_dict, meta = run_inference(model, loader, device, temperature=args.temperature)
 
-    # Compute summary
+    # Compute all metrics for ICD-O-3 axes
+    per_axis = {}
+    ranking = {}
+    rare_common = {}
+    ece_dict = {}
+    rare_threshold = cfg.eval.rare_code_threshold
+
+    for axis in ICDO3_AXES:
+        if axis not in logits_dict or axis not in targets_dict:
+            continue
+        lg = logits_dict[axis]
+        tg = targets_dict[axis]
+        K = vocab[axis].num_classes
+
+        # All ICD-O-3 axes are single-pick in this architecture
+        per_axis[axis] = compute_singlepick_metrics(lg, tg, K)
+        ranking[axis] = compute_ranking_metrics(lg, tg, K)
+        ece_dict[axis] = compute_ece(lg, tg)
+        
+        rare_codes = vocab[axis].rare_codes(rare_threshold)
+        c2i = vocab[axis].code_to_idx
+        rare_idx = {c2i[c] for c in rare_codes if c in c2i}
+        rare_common[axis] = compute_rare_common_f1(lg, tg, K, rare_idx)
+
+    # Grade kappa
+    kappa = None
+    if "icdo3_grade" in logits_dict and "icdo3_grade" in targets_dict:
+        kappa = compute_cohen_kappa(logits_dict["icdo3_grade"], targets_dict["icdo3_grade"])
+
+    # Subgroup
+    subgroup_rows = compute_subgroup_f1(logits_dict, targets_dict, meta, cfg, vocab)
+
+    # Write report
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    report = format_report(per_axis, ranking, rare_common, subgroup_rows,
+                           ece_dict, kappa, args, n_records)
+    args.output.write_text(report)
+    log.info("Report written: %s", args.output)
+
+    # Print summary
     icdo3_present = [a for a in ICDO3_AXES if a in per_axis]
     f1_scores = [per_axis[a]["f1_macro"] for a in icdo3_present]
     mean_f1 = float(np.mean(f1_scores)) if f1_scores else 0.0
@@ -296,12 +362,6 @@ def main() -> int:
     for axis in ICDO3_AXES:
         if axis in per_axis:
             log.info("  %s: %.4f", axis, per_axis[axis]["f1_macro"])
-
-    # Write report
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    report = format_report(per_axis, str(args.checkpoint), str(args.data), n_records)
-    args.output.write_text(report)
-    log.info("Report written: %s", args.output)
 
     return 0
 
