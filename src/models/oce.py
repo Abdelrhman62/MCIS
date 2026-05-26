@@ -376,11 +376,26 @@ class OncologyCodingEngine(nn.Module):
                     proj = torch.nn.Linear(hidden_dim, attn_dim, bias=False)
                     torch.nn.init.xavier_uniform_(proj.weight)
                     emb_matrix = proj(emb_matrix)
+                    
+                # Fix for E9 variance explosion:
+                # PubMedBERT embeddings have high variance/magnitude which blows up
+                # the attention scores and causes vanishing gradients. We must scale
+                # them to match the variance of Xavier initialization.
+                # fan_in = attn_dim, fan_out = K
+                import math
+                fan_in = attn_dim
+                fan_out = len(codes)
+                target_var = 2.0 / (fan_in + fan_out)
+                target_std = math.sqrt(target_var)
+                
+                # Center and scale
+                emb_matrix = emb_matrix - emb_matrix.mean()
+                emb_matrix = emb_matrix / emb_matrix.std() * target_std
 
                 embeddings[axis_name] = emb_matrix.cpu()
                 log.info(
-                    "  %s: %d labels, embedding shape %s",
-                    axis_name, len(codes), tuple(emb_matrix.shape),
+                    "  %s: %d labels, embedding shape %s, scaled to std=%.4f",
+                    axis_name, len(codes), tuple(emb_matrix.shape), target_std
                 )
 
         # Restore training mode
