@@ -350,8 +350,7 @@ def build_distance_matrices(
         matrices["icdo3_topography"] = build_topography_distance_matrix(
             axis_vocabs["icdo3_topography"]
         )
-    if "icdo3_morphology" in axis_vocabs:
-        matrices["icdo3_morphology"] = build_morphology_distance_matrix(
-            axis_vocabs["icdo3_morphology"]
-        )
+    # Note: Morphology smoothing was tested in E8 and found detrimental.
+    # It has been removed here so it does not accidentally bleed into other
+    # hierarchical experiments.
     return matrices
