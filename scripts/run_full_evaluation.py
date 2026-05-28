@@ -147,6 +147,7 @@ def compute_multilabel_metrics(logits: np.ndarray, targets: np.ndarray) -> dict:
         "f1_macro_present": float(pf1[pf1 > 0].mean()) if (pf1 > 0).any() else 0.0,
         "accuracy": float(((preds == yt).all(axis=1)).mean()),
         "n_valid": int(logits.shape[0]),
+        "n_records": int(logits.shape[0]),
     }
 
 
@@ -166,7 +167,7 @@ def compute_ranking_metrics(logits: np.ndarray, targets: np.ndarray, K: int) -> 
     p5 = float(top5_hit.mean())
     r5 = p5  # for single-pick, recall@5 = precision@5 (one true label)
     # AUC-ROC macro (one-vs-rest)
-    auc = 0.0
+    auc = float('nan')
     try:
         from sklearn.metrics import roc_auc_score
         classes_present = np.unique(y)
@@ -174,8 +175,12 @@ def compute_ranking_metrics(logits: np.ndarray, targets: np.ndarray, K: int) -> 
             # one-hot encode
             y_onehot = np.zeros((n, K))
             y_onehot[np.arange(n), y] = 1
-            auc = float(roc_auc_score(y_onehot, probs, average="macro",
-                                       multi_class="ovr", labels=list(range(K))))
+            y_present = y_onehot[:, classes_present]
+            probs_present = probs[:, classes_present]
+            # Renormalize subset probabilities
+            probs_sum = probs_present.sum(axis=-1, keepdims=True)
+            probs_present = np.divide(probs_present, probs_sum, where=probs_sum!=0)
+            auc = float(roc_auc_score(y_present, probs_present, average="macro", multi_class="ovr"))
     except Exception:
         auc = 0.0
     return {"p_at_1": p1, "p_at_5": p5, "r_at_5": r5, "top3_acc": top3, "auc_roc_macro": auc}
@@ -287,7 +292,7 @@ def compute_subgroup_f1(logits_dict, targets_dict, meta, cfg, vocab):
                 else:
                     m = compute_multilabel_metrics(lg, tg)
                 rows.append({"subgroup": f"batch_{bval}", "axis": axis,
-                             "f1_macro": m["f1_macro"], "n": m["n_valid"]})
+                             "f1_macro": m["f1_macro"], "f1_present": m.get("f1_macro_present", m.get("f1_micro", 0.0)), "n": m["n_valid"]})
 
     # cancer primary vs non
     if "is_cancer_primary" in meta:
@@ -306,7 +311,7 @@ def compute_subgroup_f1(logits_dict, targets_dict, meta, cfg, vocab):
                 else:
                     m = compute_multilabel_metrics(lg, tg)
                 rows.append({"subgroup": name, "axis": axis,
-                             "f1_macro": m["f1_macro"], "n": m["n_valid"]})
+                             "f1_macro": m["f1_macro"], "f1_present": m.get("f1_macro_present", m.get("f1_micro", 0.0)), "n": m["n_valid"]})
 
     # template vs non-template
     if "template_flag" in meta:
@@ -325,7 +330,7 @@ def compute_subgroup_f1(logits_dict, targets_dict, meta, cfg, vocab):
                 else:
                     m = compute_multilabel_metrics(lg, tg)
                 rows.append({"subgroup": name, "axis": axis,
-                             "f1_macro": m["f1_macro"], "n": m["n_valid"]})
+                             "f1_macro": m["f1_macro"], "f1_present": m.get("f1_macro_present", m.get("f1_micro", 0.0)), "n": m["n_valid"]})
 
     return rows
 
@@ -333,7 +338,7 @@ def compute_subgroup_f1(logits_dict, targets_dict, meta, cfg, vocab):
 # ── report formatter ─────────────────────────────────────────────────────────
 
 def format_report(per_axis, ranking, rare_common, subgroup_rows,
-                  ece_dict, kappa, args, n_records) -> str:
+                  ece_dict, kappa, args, n_records, agg_metrics) -> str:
     lines = ["# Full Evaluation Report", "",
              f"**Checkpoint:** `{args.checkpoint}`",
              f"**Config:** `{args.config}`",
@@ -345,13 +350,14 @@ def format_report(per_axis, ranking, rare_common, subgroup_rows,
     lines += ["## 1. Per-Axis Metrics", "",
               "| Axis | F1-Macro | F1-Micro | Prec-Macro | Rec-Macro | F1-Present | Acc | N |",
               "|---|---|---|---|---|---|---|---|"]
-    f1s = []
     for axis, m in per_axis.items():
-        f1s.append(m["f1_macro"])
         lines.append(f"| {axis} | {m['f1_macro']:.4f} | {m['f1_micro']:.4f} | "
                      f"{m['precision_macro']:.4f} | {m['recall_macro']:.4f} | "
                      f"{m['f1_macro_present']:.4f} | {m['accuracy']:.4f} | {m['n_valid']} |")
-    lines.append(f"| **Mean** | **{np.mean(f1s):.4f}** | | | | | | |")
+    
+    # Add official mean
+    official_mean = agg_metrics.early_stop_metric
+    lines.append(f"| **Official Mean** | **{official_mean:.4f}** | | | | | | |")
     lines.append("")
 
     # Ranking table
@@ -385,13 +391,13 @@ def format_report(per_axis, ranking, rare_common, subgroup_rows,
                   f"**κ = {kappa:.4f}**", ""]
 
     # Subgroup
-    if subgroup_rows:
-        lines += ["## 6. Subgroup-Stratified F1-Macro", "",
-                  "| Subgroup | Axis | F1-Macro | N |",
-                  "|---|---|---|---|"]
-        for r in subgroup_rows:
-            lines.append(f"| {r['subgroup']} | {r['axis']} | {r['f1_macro']:.4f} | {r['n']} |")
-        lines.append("")
+    # Subgroup F1
+    lines += ["## 6. Subgroup-Stratified F1-Macro", "",
+              "| Subgroup | Axis | F1-Macro | F1-Present | N |",
+              "|---|---|---|---|---|"]
+    for row in subgroup_rows:
+        lines.append(f"| {row['subgroup']} | {row['axis']} | {row['f1_macro']:.4f} | {row['f1_present']:.4f} | {row['n']} |")
+    lines.append("")
 
     return "\n".join(lines)
 
@@ -512,18 +518,39 @@ def main() -> int:
     # Subgroup
     subgroup_rows = compute_subgroup_f1(logits_dict, targets_dict, meta, cfg, vocab)
 
+    # Compute official aggregate metric (using F1-Micro for ML axes)
+    from src.eval.metrics import aggregate_axis_metrics
+    agg_metrics = aggregate_axis_metrics(per_axis, list(cfg.axis_types.single_pick), list(cfg.axis_types.multilabel))
+
+    # Flat correct mean (Claude's formula: sum of correct metrics / 10)
+    flat_scores = []
+    for axis, m in per_axis.items():
+        if axis in cfg.axis_types.single_pick:
+            flat_scores.append(m["f1_macro"])
+        else:
+            flat_scores.append(m["f1_micro"])
+    flat_mean = float(np.mean(flat_scores)) if flat_scores else 0.0
+
     # Write report
     args.output.parent.mkdir(parents=True, exist_ok=True)
     report = format_report(per_axis, ranking, rare_common, subgroup_rows,
-                           ece_dict, kappa, args, n_records)
+                           ece_dict, kappa, args, n_records, agg_metrics)
+    # Inject flat correct mean note into report
+    report = report.replace(
+        f"| **Official Mean** | **{agg_metrics.early_stop_metric:.4f}**",
+        f"| **Official Mean (Agg)** | **{agg_metrics.early_stop_metric:.4f}** | | | | | | |\n| **Flat Correct Mean** | **{flat_mean:.4f}**"
+    )
+
     args.output.write_text(report)
     log.info("Report written to %s", args.output)
 
     # Print summary
-    f1s = [m["f1_macro"] for m in per_axis.values()]
-    log.info("Overall mean F1-Macro: %.4f", np.mean(f1s))
+    log.info("Flat Correct Mean (10-axis average): %.4f", flat_mean)
+    log.info("Official Aggregated Mean (Mean of SP and ML means): %.4f", agg_metrics.early_stop_metric)
     for axis, m in per_axis.items():
-        log.info("  %s: F1=%.4f  Acc=%.4f", axis, m["f1_macro"], m["accuracy"])
+        metric_val = m["f1_macro"] if axis in cfg.axis_types.single_pick else m["f1_micro"]
+        metric_name = "F1-Macro" if axis in cfg.axis_types.single_pick else "F1-Micro"
+        log.info("  %s: %s=%.4f  Acc=%.4f", axis, metric_name, metric_val, m["accuracy"])
     if kappa is not None:
         log.info("  icdo3_grade Cohen's kappa: %.4f", kappa)
 

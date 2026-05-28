@@ -47,8 +47,9 @@ ICDO3_AXES = [
     "icdo3_topography",
     "icdo3_morphology",
     "icdo3_behavior",
-    "icdo3_grade",
+    # "icdo3_grade", # Excluded — 0 labels in TCGA-BRCA
     "icdo3_laterality",
+    # All ICD-11 axes excluded — silver labels per v6 §11.4
 ]
 
 
